@@ -360,8 +360,6 @@ public class Physics1 extends ApplicationAdapter implements InputProcessor {
 		BodyDef bodyDef2 = new BodyDef();
 		bodyDef2.type = BodyDef.BodyType.StaticBody;
 		float w = Gdx.graphics.getWidth()/PIXELS_TO_METERS * 2;
-		// Set the height to just 50 pixels above the bottom of the screen so we can see the edge in the
-		// debug renderer
 		float h = Gdx.graphics.getHeight()/PIXELS_TO_METERS- 100/PIXELS_TO_METERS;
 		//bodyDef2.position.set(0,
 //                h-10/PIXELS_TO_METERS);
@@ -391,7 +389,6 @@ public class Physics1 extends ApplicationAdapter implements InputProcessor {
 		camera.update();
 		System.out.println(body.getLinearVelocity());
 		camera.translate(body.getLinearVelocity());
-		// Step the physics simulation forward at a rate of 60hz
 		world.step(1f/60f, 6, 2);
 
 		body.applyTorque(torque,true);
@@ -452,7 +449,6 @@ public class Physics1 extends ApplicationAdapter implements InputProcessor {
 		if(keycode == Input.Keys.DOWN)
 			body.applyForceToCenter(0f, -10f, true);
 
-		// On brackets ( [ ] ) apply torque, either clock or counterclockwise
 		if(keycode == Input.Keys.RIGHT_BRACKET)
 			torque += 0.1f;
 		if(keycode == Input.Keys.LEFT_BRACKET) {
@@ -493,10 +489,7 @@ public class Physics1 extends ApplicationAdapter implements InputProcessor {
 	public boolean keyTyped(char character) {
 		return false;
 	}
-
-
-	// On touch we apply force from the direction of the users touch.
-	// This could result in the object "spinning"
+	
 	@Override
 	public boolean touchDown(int screenX, int screenY, int pointer, int button) {
 		body.applyForce(1f,1f,screenX,screenY,true);
