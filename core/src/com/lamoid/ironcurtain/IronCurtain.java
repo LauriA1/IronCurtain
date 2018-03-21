@@ -1,14 +1,28 @@
 package com.lamoid.ironcurtain;
 
 import com.badlogic.gdx.Game;
-import com.lamoid.ironcurtain.util.ScreenEnum;
-import com.lamoid.ironcurtain.util.ScreenManager;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 public class IronCurtain extends Game {
 
-	@Override
-	public void create () {
-		ScreenManager.getInstance().initialize(this);
-		ScreenManager.getInstance().showScreen( ScreenEnum.MAIN_MENU );
+  	SpriteBatch batch;
+	BitmapFont font;
+
+	public void create() {
+		batch = new SpriteBatch();
+		// Use LibGDX's default Arial font.
+		font = new BitmapFont();
+		this.setScreen(new MainMenuScreen(this));
 	}
+
+	public void render() {
+		super.render(); // important!
+	}
+
+	public void dispose() {
+		batch.dispose();
+		font.dispose();
+	}
+
 }
