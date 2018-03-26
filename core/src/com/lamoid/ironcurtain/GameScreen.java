@@ -14,6 +14,7 @@ import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
@@ -32,6 +33,7 @@ import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 
 import com.lamoid.ironcurtain.sprites.Mines;
 import com.lamoid.ironcurtain.utils.ScreenShaker;
+import com.lamoid.ironcurtain.sprites.Map;
 
 public class GameScreen implements Screen, InputProcessor {
   	final IronCurtain game;
@@ -52,6 +54,7 @@ public class GameScreen implements Screen, InputProcessor {
 
     private List<Mines> mines;
     ScreenShaker screenShaker;
+    Map map;
 
     boolean moving_left = false;
     boolean moving_right = false;
@@ -96,15 +99,17 @@ public class GameScreen implements Screen, InputProcessor {
 
         shapeRenderer = new ShapeRenderer();
 
-        texture = new Texture(Gdx.files.internal("background.png"));
+        /*texture = new Texture(Gdx.files.internal("background.png"));
         texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 
         sprite2 = new Sprite(texture);
         sprite2.setOrigin(0,0);
         sprite2.setScale(3);
-        sprite2.setPosition(-(Gdx.graphics.getWidth() / 2),-((Gdx.graphics.getHeight() / 2) + 8));
+        sprite2.setPosition(-(Gdx.graphics.getWidth() / 2),-((Gdx.graphics.getHeight() / 2) + 32));*/
 
-        world = new World(new Vector2(0, -10f),true);
+        world = new World(new Vector2(0, -20f),true);
+
+        map = new Map(world);
 
         BodyDef bodyDef = new BodyDef();
         bodyDef.type = BodyDef.BodyType.DynamicBody;
@@ -113,6 +118,7 @@ public class GameScreen implements Screen, InputProcessor {
                 (sprite.getY() + sprite.getHeight()/2) / PIXELS_TO_METERS);
 
         body = world.createBody(bodyDef);
+        body.setUserData(this);
 
         PolygonShape shape = new PolygonShape();
         shape.setAsBox(sprite.getWidth()/2 / PIXELS_TO_METERS, sprite.getHeight()
@@ -126,32 +132,13 @@ public class GameScreen implements Screen, InputProcessor {
         body.createFixture(fixtureDef);
         shape.dispose();
 
-        BodyDef bodyDef2 = new BodyDef();
-        bodyDef2.type = BodyDef.BodyType.StaticBody;
-        float w = (sprite2.getWidth() * 3) / 100f;
-        // Set the height to just 50 pixels above the bottom of the screen so we can see the edge in the
-        // debug renderer
-        float h = Gdx.graphics.getHeight()/PIXELS_TO_METERS- 50/PIXELS_TO_METERS;
-        //bodyDef2.position.set(0,
-//                h-10/PIXELS_TO_METERS);
-        bodyDef2.position.set(0,0);
-        FixtureDef fixtureDef2 = new FixtureDef();
-
-        EdgeShape edgeShape = new EdgeShape();
-        edgeShape.set(-w/2,-h/2, w/2,-h/2);
-        fixtureDef2.shape = edgeShape;
-
-        bodyEdgeScreen = world.createBody(bodyDef2);
-        bodyEdgeScreen.createFixture(fixtureDef2);
-        edgeShape.dispose();
-
         mines = new ArrayList<Mines>();
 
         /*for (int i = 0; i < 10 ; i++ ) {
             mines.add(new Mines(sprite2.getX(), sprite2.getX() + sprite2.getWidth() * 3, (Gdx.graphics.getHeight() / 2) * -1));
         }*/
 
-        int i = 0;
+        /*int i = 0;
         float x1 = sprite2.getX();
         float x2 = sprite2.getX() + sprite2.getWidth() * 3;
         float y = (Gdx.graphics.getHeight() / 2) * -1;
@@ -180,26 +167,63 @@ public class GameScreen implements Screen, InputProcessor {
             else {
                 i++;
             }
-        }
+        }*/
 
         Gdx.input.setInputProcessor(this);
 
         camera = new OrthographicCamera(Gdx.graphics.getWidth(),Gdx.graphics.
                 getHeight());
 
-        screenShaker = new ScreenShaker(camera, 8);
+        camera.update();
+
+        screenShaker = new ScreenShaker(camera, 32);
+
+        world.setContactListener(new ContactListener() {
+
+            @Override
+            public void beginContact(Contact contact) {
+                Fixture fixtureA = contact.getFixtureA();
+                Fixture fixtureB = contact.getFixtureB();
+                //System.out.println("beginContact" + "between " + fixtureA.toString() + " and " + fixtureB.toString());
+                //System.out.println(fixtureA.getBody().getUserData() + ", " + fixtureB.getBody().getUserData());
+                if(fixtureA.getBody().getUserData().toString().contains("Map") &&
+                        fixtureB.getBody().getUserData().toString().contains("GameScreen")) {
+                    readyToJump();
+                }
+            }
+
+            @Override
+            public void endContact(Contact contact) {
+                //Fixture fixtureA = contact.getFixtureA();
+                //Fixture fixtureB = contact.getFixtureB();
+                //System.out.println("endContact" + "between " + fixtureA.toString() + " and " + fixtureB.toString());
+            }
+
+            @Override
+            public void preSolve(Contact contact, Manifold oldManifold) {
+            }
+
+            @Override
+            public void postSolve(Contact contact, ContactImpulse impulse) {
+            }
+
+        });
+
 	}
 
 	@Override
 	public void render(float delta) {
 	    //System.out.println(sprite.getX() + " | " + bodyEdgeScreen.getPosition().x);
 
-        if (!do_not_shake) {
-            camera.position.set(sprite.getX() + sprite.getWidth() / 2, 0, 0);
-        }
+        //System.out.println("Camera: " + camera.position.x + ", " + camera.position.y);
+        //System.out.println("Background: " + sprite2.getX() + ", " + sprite2.getY());
+
+        camera.position.set(sprite.getX() + sprite.getWidth() / 2, 0, 0);
+
         screenShaker.update();
         batch.setProjectionMatrix(camera.combined);
         camera.update();
+
         // Step the physics simulation forward at a rate of 60hz
         world.step(1f/60f, 6, 2);
 
@@ -211,7 +235,8 @@ public class GameScreen implements Screen, InputProcessor {
 
         batch.begin();
 
-        sprite2.draw(batch);
+        //sprite2.draw(batch);
+        map.drawMap(batch);
         batch.draw(sprite, sprite.getX(), sprite.getY(), sprite.getOriginX(),
                 sprite.getOriginY(), sprite.getWidth(), sprite.getHeight(), sprite.getScaleX(), sprite.getScaleY(), sprite.getRotation());
 
@@ -234,28 +259,29 @@ public class GameScreen implements Screen, InputProcessor {
             body.setLinearVelocity(7.5f, body.getLinearVelocity().y);
         }
 
-        if (is_jumping && (body.getPosition().y <= -5.5)) {
-            if (!moving_left && !moving_right) {
-                body.setLinearVelocity(0f, 0f);
-            }
-            body.setLinearVelocity(body.getLinearVelocity().x, 0f);
-            is_jumping = false;
-            is_frozen = false;
-        }
-
-        for (Mines mine : mines) {
+        /*for (Mines mine : mines) {
             if (sprite.getBoundingRectangle().overlaps(mine.getSprite().getBoundingRectangle())) {
-                /*if (facing_left) {
+                if (facing_left) {
                     body.setLinearVelocity(5f, 0f);
                 }
                 else {
                     body.setLinearVelocity(-5f, 0f);
                 }
                 is_jumping = true;
-                is_frozen = true;*/
+                is_frozen = true;
                 if (!screenShaker.get_status() && !do_not_shake) {
-                    screenShaker.shake(30, camera.position);
+                    screenShaker.shake(5, camera.position);
                     do_not_shake = true;
+
+                    if (facing_left) {
+                        body.setLinearVelocity(7.5f, 10f);
+                    }
+                    else {
+                        body.setLinearVelocity(-7.5f, 10f);
+                    }
+
+                    is_jumping = true;
+                    is_frozen = true;
                 }
             }
             else {
@@ -263,8 +289,35 @@ public class GameScreen implements Screen, InputProcessor {
                     do_not_shake = false;
                 }
             }
+        }*/
+
+        boolean facing_right = true;
+
+        if (body.getLinearVelocity().x < 0) {
+            //vasemmalle
+            if (facing_right) {
+                //flip
+            }
         }
+        else {
+            //oikealle
+            if (!facing_right) {
+                //flip
+            }
+        }
+
 	}
+
+	public void readyToJump() {
+        if (!moving_left && !moving_right) {
+            body.setLinearVelocity(0f, 0f);
+        }
+        else {
+            body.setLinearVelocity(body.getLinearVelocity().x, 0f);
+        }
+        is_jumping = false;
+        is_frozen = false;
+    }
 
 	@Override
 	public void resize(int width, int height) {
@@ -363,7 +416,7 @@ public class GameScreen implements Screen, InputProcessor {
     @Override
     public boolean touchDragged(int screenX, int screenY, int pointer) {
         if ((old_screenY - screenY) > 256 && (old_screenX - screenX) < 256 && !is_jumping) {
-            body.setLinearVelocity(body.getLinearVelocity().x, 10f);
+            body.setLinearVelocity(body.getLinearVelocity().x, 15f);
             is_jumping = true;
         }
 
