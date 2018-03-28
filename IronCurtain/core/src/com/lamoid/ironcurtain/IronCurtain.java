@@ -1,33 +1,88 @@
 package com.lamoid.ironcurtain;
 
-import com.badlogic.gdx.ApplicationAdapter;
+import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.utils.I18NBundle;
+import com.lamoid.ironcurtain.screens.*;
+import java.util.Locale;
 
-public class IronCurtain extends ApplicationAdapter {
-	SpriteBatch batch;
-	Texture img;
-	
-	@Override
-	public void create () {
-		batch = new SpriteBatch();
-		img = new Texture("badlogic.jpg");
+public class IronCurtain extends Game {
+
+  	//public SpriteBatch batch;
+	public BitmapFont font;
+    public Skin skin;
+
+	private IntroScreen introScreen;
+	private SettingsScreen settingsScreen;
+	private MainMenuScreen mainMenuScreen;
+	private GameScreen gameScreen;
+	private EndScreen endScreen;
+	private Settings settings;
+
+	public final static int MAINMENU = 0;
+	public final static int SETTINGS = 1;
+	public final static int THEGAME = 2;
+	public final static int ENDGAME = 3;
+
+    private Locale locale;
+    private FileHandle baseFileHandle;
+    public I18NBundle stringsBundle;
+
+	public void create() {
+		//batch = new SpriteBatch();
+		// Use LibGDX's default Arial font.
+		font = new BitmapFont();
+        skin = new Skin(Gdx.files.internal("skin/glassy-ui.json"));
+
+        introScreen = new IntroScreen(this);
+        settings = new Settings();
+
+        if(this.getPreferences().getLanguage().equals("Suomi")) {
+            locale = new Locale("fi");
+        } else {
+            locale = Locale.ROOT;
+        }
+        baseFileHandle = Gdx.files.internal("i18n/stringsBundle");
+        stringsBundle = I18NBundle.createBundle(baseFileHandle, locale);
+
+        setScreen(introScreen);
 	}
 
-	@Override
-	public void render () {
-		Gdx.gl.glClearColor(1, 0, 0, 1);
-		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-		batch.begin();
-		batch.draw(img, 0, 0);
-		batch.end();
+	public void changeScreen(int newScreen){
+        switch(newScreen){
+            case MAINMENU:
+                mainMenuScreen = new MainMenuScreen(this);
+                this.setScreen(mainMenuScreen);
+                break;
+            case SETTINGS:
+                settingsScreen = new SettingsScreen(this);
+                this.setScreen(settingsScreen);
+                break;
+            case THEGAME:
+                gameScreen = new GameScreen(this);
+                this.setScreen(gameScreen);
+                break;
+            case ENDGAME:
+                endScreen = new EndScreen(this);
+                this.setScreen(endScreen);
+                break;
+        }
+    }
+
+    public Settings getPreferences() {
+        return this.settings;
+    }
+
+	public void render() {
+		super.render(); // important!
 	}
-	
-	@Override
-	public void dispose () {
-		batch.dispose();
-		img.dispose();
+
+	public void dispose() {
+		//batch.dispose();
+		font.dispose();
 	}
+
 }
