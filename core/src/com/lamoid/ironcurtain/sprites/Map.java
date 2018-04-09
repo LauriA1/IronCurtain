@@ -13,7 +13,7 @@ public class Map {
     private Sprite[] sprites;
     private Body body;
 
-    private int mapLength = 10;
+    private int mapLength = 6;
 
     public Map(World world) {
         sprites = new Sprite[6];
@@ -64,8 +64,23 @@ public class Map {
         }
     }
 
+    public void animateBackground(Camera camera, float old_cameraX) {
+        for (int i = (sprites.length - 2); i > 0; i--) {
+            if (camera.position.x > old_cameraX) {
+                sprites[i].setPosition(sprites[i].getX() + ((sprites.length - i)), sprites[i].getY());
+            }
+            else if (camera.position.x < old_cameraX) {
+                sprites[i].setPosition(sprites[i].getX() - ((sprites.length - i)), sprites[i].getY());
+            }
+        }
+    }
+
     public Sprite getSprite() {
         return sprites[0];
+    }
+
+    public float getLength() {
+        return sprites[5].getWidth();
     }
 
     public Body getBody() {

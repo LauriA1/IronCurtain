@@ -31,13 +31,19 @@ public class Animation {
             frame = 0;
     }
     // direction true == RIGHT, false == LEFT
-    public void setDirection(float cycleT, boolean direction){
+    public void setDirection(float cycleT, boolean direction, boolean key_up){
         maxFrameTime = cycleT / frameCount;
         runnerDirection = direction;
+        if (key_up) {
+            frame = 4;
+        }
     }
 
-    public TextureRegion getFrame(){
+    public TextureRegion getFrame(boolean is_jumping){
         //frames.get(frame).flip(direction,false);
+        if (is_jumping) {
+            frame = 0;
+        }
         if(runnerDirection == false) {
             if (!frames.get(frame).isFlipX()) {
                 frames.get(frame).flip(true, false);

@@ -35,7 +35,8 @@ import com.lamoid.ironcurtain.sprites.Mines;
 import com.lamoid.ironcurtain.utils.ScreenShaker;
 import com.lamoid.ironcurtain.sprites.Map;
 import com.lamoid.ironcurtain.sprites.Runner;
-import com.lamoid.ironcurtain.utils.Animation;
+import com.lamoid.ironcurtain.sprites.Towers;
+import com.lamoid.ironcurtain.sprites.Dogs;
 
 public class GameScreen implements Screen, InputProcessor {
   	final IronCurtain game;
@@ -43,7 +44,7 @@ public class GameScreen implements Screen, InputProcessor {
     SpriteBatch batch;
     Sprite sprite;
     //Sprite sprite2;
-    Sprite sprite3;
+    //Sprite sprite3;
     Texture img;
     World world;
     Body body;
@@ -51,11 +52,14 @@ public class GameScreen implements Screen, InputProcessor {
     OrthographicCamera camera;
     Rectangle left_key;
     Rectangle right_key;
+    Rectangle health_bar;
     ShapeRenderer shapeRenderer;
     Texture texture;
     Runner runner;
 
     private List<Mines> mines;
+    private List<Towers> towers;
+    private List<Dogs> dogs;
     ScreenShaker screenShaker;
     Map map;
 
@@ -64,6 +68,10 @@ public class GameScreen implements Screen, InputProcessor {
     boolean is_jumping = true;
     boolean is_frozen = false;
     boolean facing_left = false;
+    boolean time_to_shoot = false;
+
+    float shoot_timer = 0;
+    int tower_index = 0;
 
     boolean do_not_shake = false;
 
@@ -72,7 +80,17 @@ public class GameScreen implements Screen, InputProcessor {
     int left_pointer = 0;
     int right_pointer = 0;
 
-    int mine_count = 15;
+    float old_cameraX = 0;
+
+    int mine_count = 8;
+    int tower_count = 5;
+
+    private List<Float> timers;
+
+    float tower_distance = 512;
+    float mine_distance = 512;
+
+    boolean is_out_of_screen = false;
 
     final float PIXELS_TO_METERS = 100f;
 
@@ -86,9 +104,57 @@ public class GameScreen implements Screen, InputProcessor {
         sprite.setPosition(-sprite.getWidth()/2,-sprite.getHeight()/2);
         */
 
-        img = new Texture ("mine.png");
+        camera = new OrthographicCamera(Gdx.graphics.getWidth(),Gdx.graphics.
+                getHeight());
+
+        screenShaker = new ScreenShaker(camera, 32);
+
+        world = new World(new Vector2(0, -20f),true);
+
+        map = new Map(world);
+
+        runner = new Runner(world, 0.32f, 0);
+
+        timers = new ArrayList<Float>();
+
+        towers = new ArrayList<Towers>();
+
+        int i = 0;
+
+        float x1 = map.getSprite().getX() + Gdx.graphics.getWidth();
+        float x2 = map.getSprite().getX() + map.getSprite().getWidth() - Gdx.graphics.getWidth();
+        float y = (Gdx.graphics.getHeight() / 2) * -1;
+
+        while (i < tower_count) {
+            towers.add(new Towers(x1, x2, y));
+            timers.add(new Float(0));
+            int x = towers.get(i).getX();
+            boolean is_overlapping = false;
+
+            if (i > 0) {
+                for (Towers tower : towers) {
+                    if (Math.abs(tower.getX() - x) < tower_distance && towers.indexOf(tower) != i) {
+                        is_overlapping = true;
+                        //System.out.println("Overlapping mine #" + i);
+                    }
+                }
+
+                if (is_overlapping) {
+                    towers.remove(i);
+                }
+
+                if (towers.size() > i) {
+                    i++;
+                }
+            }
+            else {
+                i++;
+            }
+        }
+
+        /*img = new Texture ("mine.png");
         sprite3 = new Sprite(img);
-        sprite3.setPosition(1024, (Gdx.graphics.getHeight() / 2) * -1);
+        sprite3.setPosition(1024, (Gdx.graphics.getHeight() / 2) * -1);*/
 
         left_key = new Rectangle();
         left_key.x = Gdx.graphics.getWidth() * 0.05f;
@@ -102,6 +168,12 @@ public class GameScreen implements Screen, InputProcessor {
         right_key.width = left_key.width;
         right_key.height = left_key.height;
 
+        health_bar = new Rectangle();
+        health_bar.x = left_key.x;
+        health_bar.y = Gdx.graphics.getHeight() * 0.95f;
+        health_bar.width = (Gdx.graphics.getWidth() * 0.9f) * (runner.getHealth() / 10f);
+        health_bar.height = left_key.height / 10;
+
         shapeRenderer = new ShapeRenderer();
 
         /*texture = new Texture(Gdx.files.internal("background.png"));
@@ -112,23 +184,11 @@ public class GameScreen implements Screen, InputProcessor {
         sprite2.setScale(3);
         sprite2.setPosition(-(Gdx.graphics.getWidth() / 2),-((Gdx.graphics.getHeight() / 2) + 32));*/
 
-        world = new World(new Vector2(0, -20f),true);
-
-        map = new Map(world);
-
-        runner = new Runner(world, 0, 0);
+        dogs = new ArrayList<Dogs>();
 
         mines = new ArrayList<Mines>();
 
-        float x1 = map.getSprite().getX();
-        float x2 = x1 + map.getSprite().getWidth();
-        float y = (Gdx.graphics.getHeight() / 2) * -1;
-
-        /*for (int i = 0; i < 10 ; i++ ) {
-            mines.add(new Mines(x1, x2, y));
-        }*/
-
-        int i = 0;
+        i = 0;
 
         while (i < mine_count) {
             mines.add(new Mines(world, x1, x2, y));
@@ -137,7 +197,7 @@ public class GameScreen implements Screen, InputProcessor {
 
             if (i > 0) {
                 for (Mines mine : mines) {
-                    if (Math.abs(mine.getX() - x) < 256 && mines.indexOf(mine) != i) {
+                    if (Math.abs(mine.getX() - x) < mine_distance && mines.indexOf(mine) != i) {
                         is_overlapping = true;
                         //System.out.println("Overlapping mine #" + i);
                     }
@@ -156,14 +216,9 @@ public class GameScreen implements Screen, InputProcessor {
             }
         }
 
-        Gdx.input.setInputProcessor(this);
-
-        camera = new OrthographicCamera(Gdx.graphics.getWidth(),Gdx.graphics.
-                getHeight());
-
         camera.update();
 
-        screenShaker = new ScreenShaker(camera, 32);
+        Gdx.input.setInputProcessor(this);
 
         world.setContactListener(new ContactListener() {
 
@@ -176,6 +231,25 @@ public class GameScreen implements Screen, InputProcessor {
                 if(fixtureA.getBody().getUserData().toString().contains("Map") &&
                         fixtureB.getBody().getUserData().toString().contains("Runner")) {
                     readyToJump();
+
+                }
+
+                if(fixtureA.getBody().getUserData().toString().contains("Runner") &&
+                        fixtureB.getBody().getUserData().toString().contains("Dogs")) {
+                    if (!screenShaker.get_status()) {
+                        screenShaker.shake(5, camera.position);
+                    }
+                    if (facing_left) {
+                        runner.getBody().setLinearVelocity(7.5f, 10f);
+                    }
+                    else {
+                        runner.getBody().setLinearVelocity(-7.5f, 10f);
+                    }
+
+                    runner.setHealth(runner.getHealth() - 1f);
+
+                    is_jumping = true;
+                    is_frozen = true;
                 }
 
                 if(fixtureA.getBody().getUserData().toString().contains("Runner") &&
@@ -189,6 +263,8 @@ public class GameScreen implements Screen, InputProcessor {
                     else {
                         runner.getBody().setLinearVelocity(-7.5f, 10f);
                     }
+
+                    runner.setHealth(runner.getHealth() - 1f);
 
                     is_jumping = true;
                     is_frozen = true;
@@ -222,7 +298,22 @@ public class GameScreen implements Screen, InputProcessor {
         //System.out.println("Background: " + sprite2.getX() + ", " + sprite2.getY());
 
         //camera.position.set(sprite.getX() + sprite.getWidth() / 2, 0, 0);
-        camera.position.set(runner.getPosition().x , 0, 0);
+
+        if (runner.getHealth() <= 0) {
+            game.setScreen(new GameScreen(game));
+        }
+
+        for (int i = 0; i < tower_count; i++) {
+            timers.set(i, timers.get(i) + delta);
+        }
+
+        old_cameraX = camera.position.x;
+        //System.out.println(runner.getPosition().x + Gdx.graphics.getWidth() / 2);
+        if (runner.getPosition().x >= 32 && runner.getPosition().x <= map.getLength() - Gdx.graphics.getWidth()) {
+            camera.position.set(runner.getPosition().x , 0, 0);
+        }
+
+        map.animateBackground(camera, old_cameraX);
 
         screenShaker.update();
         batch.setProjectionMatrix(camera.combined);
@@ -241,11 +332,30 @@ public class GameScreen implements Screen, InputProcessor {
 
         //sprite2.draw(batch);
         map.drawMap(batch);
-        /*batch.draw(sprite, sprite.getX(), sprite.getY(), sprite.getOriginX(),
-                sprite.getOriginY(), sprite.getWidth(), sprite.getHeight(), sprite.getScaleX(), sprite.getScaleY(), sprite.getRotation());*/
+
+        for (Towers tower : towers) {
+            tower.drawTower(batch);
+        }
+
         runner.update(delta);
-        batch.draw(runner.getRunner(), runner.getPosition().x, runner.getPosition().y, runner.getWidth(), runner.getHeight());
+        batch.draw(runner.getRunner(is_jumping), runner.getPosition().x, runner.getPosition().y, runner.getWidth(), runner.getHeight());
         //System.out.println(runner.getWidth());
+
+        for (Dogs dog : dogs) {
+            dog.updatePos();
+            dog.getBody().setLinearVelocity(10f, 0f);
+            dog.drawDog(batch);
+
+            System.out.println(dog.getBody().getPosition().x);
+            if (dog.getBody().getPosition().x > camera.position.x / 100f + (Gdx.graphics.getWidth() * 1.1f) / 200f) {
+                is_out_of_screen = true;
+            }
+        }
+
+        if (is_out_of_screen) {
+            dogs.remove(0);
+            is_out_of_screen = false;
+        }
 
         for (Mines mine : mines) {
             mine.drawMine(batch);
@@ -253,11 +363,80 @@ public class GameScreen implements Screen, InputProcessor {
 
         batch.end();
 
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+
+        for (Towers tower : towers) {
+            if (timers.get(towers.indexOf(tower)) < tower.getT()) {
+                tower.drawSpotlight(shapeRenderer, camera);
+                List<Float> coordinates;
+                coordinates = tower.getCoordinates();
+
+                boolean check1 = false;
+                boolean check2 = false;
+
+                //System.out.print("runner.x: " + runner.getPosition().x + Gdx.graphics.getWidth() / 2);
+
+                for (Float coordinate : coordinates) {
+                    if (coordinates.indexOf(coordinate) == 0) {
+                        //System.out.print(" | tower" + towers.indexOf(tower) + ": " + (coordinate + camera.position.x));
+                        if (runner.getPosition().x + runner.getWidth() + Gdx.graphics.getWidth() / 2
+                                <= coordinate + camera.position.x) {
+                            check1 = true;
+                        }
+                    }
+
+                    if (coordinates.indexOf(coordinate) == 1) {
+                        //System.out.println(", " + (coordinate + camera.position.x));
+                        if (runner.getPosition().x + Gdx.graphics.getWidth() / 2
+                                >= (coordinate + camera.position.x)) {
+                            check2 = true;
+                        }
+                    }
+
+                    if (check1 && check2) {
+                        screenShaker.shake(5, camera.position);
+                        //runner.setHealth(runner.getHealth() - 0.1f);
+
+                        if (dogs.size() < 1) {
+                            dogs.add(new Dogs(world, camera));
+                        }
+
+                        //time_to_shoot = true;
+                    }
+                }
+            }
+            else if (timers.get(towers.indexOf(tower)) >= tower.getT() * 2) {
+                timers.set(towers.indexOf(tower), 0f);
+            }
+
+            /*if (time_to_shoot) {
+                shoot_timer += delta;
+                if (shoot_timer >= 3f) {
+                    screenShaker.shake(5, camera.position);
+                    runner.setHealth(runner.getHealth() - 1f);
+                    time_to_shoot = false;
+                    shoot_timer = 0;
+                }
+                else if (shoot_timer >= 1f) {
+                    tower.drawGunfire(shapeRenderer, camera);
+                }
+            }*/
+        }
+
         shapeRenderer.setColor(80 / 255.0f, 80 / 255.0f, 50 / 255.0f, 1);
         shapeRenderer.rect(left_key.x, left_key.y, left_key.width, left_key.height);
         shapeRenderer.rect(right_key.x, right_key.y, right_key.width, right_key.height);
+
+        health_bar.width = (Gdx.graphics.getWidth() * 0.9f) * (runner.getHealth() / 10f);
+
+        shapeRenderer.setColor(255 / 255.0f, 0 / 255.0f, 0 / 255.0f, 1);
+        shapeRenderer.rect(health_bar.x, health_bar.y, health_bar.width, health_bar.height);
+
         shapeRenderer.end();
+        Gdx.gl.glDisable(GL20.GL_BLEND);
 
         if (moving_left && !is_frozen) {
             runner.getBody().setLinearVelocity(-7.5f, runner.getBody().getLinearVelocity().y);
@@ -276,6 +455,12 @@ public class GameScreen implements Screen, InputProcessor {
         }
         else {
             runner.getBody().setLinearVelocity(runner.getBody().getLinearVelocity().x, 0f);
+        }
+        if (facing_left) {
+            runner.keyUpLeft();
+        }
+        else {
+            runner.keyUpRight();
         }
         is_jumping = false;
         is_frozen = false;

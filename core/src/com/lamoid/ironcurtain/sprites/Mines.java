@@ -36,6 +36,7 @@ public class Mines {
 
         FixtureDef fixtureDef = new FixtureDef();
         fixtureDef.shape = shape;
+        fixtureDef.filter.groupIndex = -2;
         body.createFixture(fixtureDef);
 
         shape.dispose();

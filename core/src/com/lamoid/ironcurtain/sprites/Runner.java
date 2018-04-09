@@ -24,6 +24,8 @@ public class Runner {
     float movementL, movementR;
     int index;
     int frameCount = 12;
+    boolean is_jumping = true;
+    float health;
 
     public Runner(World world, float x, float y){
         position = new Vector3(x, y, 0);
@@ -34,6 +36,8 @@ public class Runner {
         runnerAnimation = new Animation(new TextureRegion(runner), frameCount, 10.5f);
         bounds = new Rectangle(x, y, runner.getWidth(), runner.getHeight());
         //System.out.println(runner.getHeight() + " : " + runner.getWidth());
+
+        health = 10f;
 
         //create body
         BodyDef bodyDef = new BodyDef();
@@ -50,16 +54,26 @@ public class Runner {
         fixtureDef.shape = shape;
         fixtureDef.density = 0.1f;
         fixtureDef.restitution = 0.5f;
+        fixtureDef.filter.groupIndex = -1;
 
-        body.createFixture(fixtureDef);
+                body.createFixture(fixtureDef);
         shape.dispose();
     }
 
     public void update(float dt){
-        runnerAnimation.update(dt);
-
         position.x = body.getPosition().x * 100f - getWidth() / 2;
         position.y = body.getPosition().y * 100f - getHeight() / 2;
+
+        //System.out.println(position.y);
+
+        if ((position.y + getHeight()) > 0) {
+            is_jumping = true;
+        }
+        else {
+            is_jumping = false;
+        }
+
+        runnerAnimation.update(dt);
 
         /*sprite.setPosition((body.getPosition().x * PIXELS_TO_METERS) - sprite.getWidth()/2,
                 (body.getPosition().y * PIXELS_TO_METERS) -sprite.getHeight()/2 );*/
@@ -78,25 +92,26 @@ public class Runner {
     public void jump(){
         if(position.y < 35)
             velocity.y = 300;
+        runnerAnimation.setDirection(0.5f,true, false);
     }
 
     public void moveRight(){
         movementR = MOVEMENT;
-        runnerAnimation.setDirection(0.5f, true);
+        runnerAnimation.setDirection(0.5f, true, false);
     }
 
     public void moveLeft(){
         movementL = -MOVEMENT;
-        runnerAnimation.setDirection(0.5f, false);
+        runnerAnimation.setDirection(0.5f, false, false);
     }
 
     public void keyUpRight(){
         movementR = 0;
-        runnerAnimation.setDirection(200, true);
+        runnerAnimation.setDirection(200, true, true);
     }
 
     public void keyUpLeft(){
-        runnerAnimation.setDirection(200, false);
+        runnerAnimation.setDirection(200, false, true);
         movementL = 0;
     }
 
@@ -104,11 +119,24 @@ public class Runner {
 
     public float getWidth() { return runnerSprite.getWidth() / frameCount; }
 
-   // public Sprite getRunner() { return runnerSprite; }
-    public TextureRegion getRunner() {
-        return runnerAnimation.getFrame(); }
+    public Sprite getRunnerSprite() { return runnerSprite; }
+    public TextureRegion getRunner(boolean is_jumping) {
+        return runnerAnimation.getFrame(is_jumping); }
 
     public Vector3 getPosition() { return position; }
+
+    public void setHealth(float health) {
+        if (health > 0) {
+            this.health = health;
+        }
+        else {
+            this.health = 0;
+        }
+    }
+
+    public float getHealth() {
+        return health;
+    }
 
     public Body getBody() {
         return body;
