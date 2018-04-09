@@ -11,6 +11,7 @@ public class Dogs {
     private Texture texture;
     private Sprite sprite;
     private Body body;
+    private FixtureDef fixtureDef;
 
     private float x = 0;
     private float y = 0;
@@ -19,7 +20,7 @@ public class Dogs {
         texture = new Texture("dog.png");
 
         x = camera.position.x / 100f - (Gdx.graphics.getWidth() * 1.5f) / 200f;
-        y = -Gdx.graphics.getHeight() / 200f;
+        y = (-Gdx.graphics.getHeight() * 0.8f) / 200f;
 
         sprite = new Sprite(texture);
         sprite.setPosition(x, y);
@@ -35,7 +36,7 @@ public class Dogs {
         PolygonShape shape = new PolygonShape();
         shape.setAsBox(sprite.getWidth() / 200f, sprite.getHeight() / 200f);
 
-        FixtureDef fixtureDef = new FixtureDef();
+        fixtureDef = new FixtureDef();
         fixtureDef.shape = shape;
         fixtureDef.density = 0.1f;
         fixtureDef.restitution = 0.5f;
@@ -48,6 +49,12 @@ public class Dogs {
     public void updatePos() {
         sprite.setPosition(body.getPosition().x * 100f - sprite.getWidth() / 2,
                 body.getPosition().y * 100f - sprite.getHeight() / 2);
+    }
+
+    public void resetPos(Camera camera) {
+        x = camera.position.x / 100f - (Gdx.graphics.getWidth() * 1.5f) / 200f;
+        y = (-Gdx.graphics.getHeight() * 0.8f) / 200f;
+        body.setTransform(x, y, body.getAngle());
     }
 
     public void drawDog(SpriteBatch batch) {
@@ -65,6 +72,8 @@ public class Dogs {
     public Body getBody() {
         return body;
     }
+
+    public FixtureDef getFixture() { return fixtureDef; }
 
     public Texture getTexture() {
         return texture;

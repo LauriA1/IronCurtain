@@ -9,7 +9,7 @@ public class Animation {
     private float currentFrameTime;
     private int frameCount;
     private int frame;
-    private boolean runnerDirection;
+    private boolean runnerDirection = true;
 
     public Animation(TextureRegion region, int frameCount, float cycleTime){
         frames = new Array<TextureRegion>();

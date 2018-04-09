@@ -56,7 +56,7 @@ public class Runner {
         fixtureDef.restitution = 0.5f;
         fixtureDef.filter.groupIndex = -1;
 
-                body.createFixture(fixtureDef);
+        body.createFixture(fixtureDef);
         shape.dispose();
     }
 
@@ -92,7 +92,8 @@ public class Runner {
     public void jump(){
         if(position.y < 35)
             velocity.y = 300;
-        runnerAnimation.setDirection(0.5f,true, false);
+
+        //runnerAnimation.setDirection(0.5f,true, false);
     }
 
     public void moveRight(){

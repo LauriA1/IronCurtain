@@ -13,7 +13,7 @@ public class Map {
     private Sprite[] sprites;
     private Body body;
 
-    private int mapLength = 6;
+    private int mapLength = 10;
 
     public Map(World world) {
         sprites = new Sprite[6];

@@ -41,27 +41,22 @@ import com.lamoid.ironcurtain.sprites.Dogs;
 public class GameScreen implements Screen, InputProcessor {
   	final IronCurtain game;
 
-    SpriteBatch batch;
-    Sprite sprite;
-    //Sprite sprite2;
-    //Sprite sprite3;
-    Texture img;
-    World world;
-    Body body;
-    Body bodyEdgeScreen;
-    OrthographicCamera camera;
-    Rectangle left_key;
-    Rectangle right_key;
-    Rectangle health_bar;
-    ShapeRenderer shapeRenderer;
-    Texture texture;
-    Runner runner;
+    private SpriteBatch batch;
+    private World world;
+    private OrthographicCamera camera;
+    private Rectangle left_key;
+    private Rectangle right_key;
+    private Rectangle jump_key;
+    private Rectangle health_bar;
+    private ShapeRenderer shapeRenderer;
+
+    private Runner runner;
+    private Dogs dog;
+    private ScreenShaker screenShaker;
+    private Map map;
 
     private List<Mines> mines;
     private List<Towers> towers;
-    private List<Dogs> dogs;
-    ScreenShaker screenShaker;
-    Map map;
 
     boolean moving_left = false;
     boolean moving_right = false;
@@ -69,11 +64,11 @@ public class GameScreen implements Screen, InputProcessor {
     boolean is_frozen = false;
     boolean facing_left = false;
     boolean time_to_shoot = false;
+    boolean move_dog = false;
+    boolean dog_attacked = false;
 
     float shoot_timer = 0;
     int tower_index = 0;
-
-    boolean do_not_shake = false;
 
     int old_screenX = 0;
     int old_screenY = 0;
@@ -82,50 +77,45 @@ public class GameScreen implements Screen, InputProcessor {
 
     float old_cameraX = 0;
 
-    int mine_count = 8;
-    int tower_count = 5;
+    int mine_count = 15;
+    int tower_count = 10;
 
     private List<Float> timers;
 
     float tower_distance = 512;
     float mine_distance = 512;
 
-    boolean is_out_of_screen = false;
-
-    final float PIXELS_TO_METERS = 100f;
-
 	public GameScreen(final IronCurtain gam) {
 		this.game = gam;
-
         batch = new SpriteBatch();
-        /*
-        img = new Texture("badlogic.jpg");
-        sprite = new Sprite(img);
-        sprite.setPosition(-sprite.getWidth()/2,-sprite.getHeight()/2);
-        */
-
         camera = new OrthographicCamera(Gdx.graphics.getWidth(),Gdx.graphics.
                 getHeight());
-
         screenShaker = new ScreenShaker(camera, 32);
-
         world = new World(new Vector2(0, -20f),true);
-
         map = new Map(world);
-
         runner = new Runner(world, 0.32f, 0);
-
         timers = new ArrayList<Float>();
-
         towers = new ArrayList<Towers>();
-
-        int i = 0;
+        dog = new Dogs(world, camera);
 
         float x1 = map.getSprite().getX() + Gdx.graphics.getWidth();
         float x2 = map.getSprite().getX() + map.getSprite().getWidth() - Gdx.graphics.getWidth();
         float y = (Gdx.graphics.getHeight() / 2) * -1;
 
-        while (i < tower_count) {
+        for (int i = 0; i < tower_count; i++) {
+            towers.add(new Towers((x2 - x1) / tower_count * i,
+                    (x2 - x1) / tower_count * (i + 1), y));
+            timers.add(new Float(0));
+        }
+
+        mines = new ArrayList<Mines>();
+
+        for (int i = 0; i < mine_count; i++) {
+            mines.add(new Mines(world, (x2 - x1) / tower_count * i,
+                    (x2 - x1) / tower_count * (i + 1), y));
+        }
+
+        /*while (i < tower_count) {
             towers.add(new Towers(x1, x2, y));
             timers.add(new Float(0));
             int x = towers.get(i).getX();
@@ -150,11 +140,7 @@ public class GameScreen implements Screen, InputProcessor {
             else {
                 i++;
             }
-        }
-
-        /*img = new Texture ("mine.png");
-        sprite3 = new Sprite(img);
-        sprite3.setPosition(1024, (Gdx.graphics.getHeight() / 2) * -1);*/
+        }*/
 
         left_key = new Rectangle();
         left_key.x = Gdx.graphics.getWidth() * 0.05f;
@@ -163,10 +149,16 @@ public class GameScreen implements Screen, InputProcessor {
         left_key.height = left_key.width;
 
         right_key = new Rectangle();
-        right_key.x = Gdx.graphics.getWidth() - (Gdx.graphics.getWidth() * 0.15f);
+        right_key.x = left_key.x + left_key.width * 1.15f; //Gdx.graphics.getWidth() - (Gdx.graphics.getWidth() * 0.15f);
         right_key.y = left_key.y;
         right_key.width = left_key.width;
         right_key.height = left_key.height;
+
+        jump_key = new Rectangle();
+        jump_key.x = Gdx.graphics.getWidth() - (Gdx.graphics.getWidth() * 0.15f);
+        jump_key.y = left_key.y;
+        jump_key.width = left_key.width;
+        jump_key.height = left_key.height;
 
         health_bar = new Rectangle();
         health_bar.x = left_key.x;
@@ -184,11 +176,7 @@ public class GameScreen implements Screen, InputProcessor {
         sprite2.setScale(3);
         sprite2.setPosition(-(Gdx.graphics.getWidth() / 2),-((Gdx.graphics.getHeight() / 2) + 32));*/
 
-        dogs = new ArrayList<Dogs>();
-
-        mines = new ArrayList<Mines>();
-
-        i = 0;
+        /*i = 0;
 
         while (i < mine_count) {
             mines.add(new Mines(world, x1, x2, y));
@@ -214,7 +202,7 @@ public class GameScreen implements Screen, InputProcessor {
             else {
                 i++;
             }
-        }
+        }*/
 
         camera.update();
 
@@ -239,17 +227,19 @@ public class GameScreen implements Screen, InputProcessor {
                     if (!screenShaker.get_status()) {
                         screenShaker.shake(5, camera.position);
                     }
-                    if (facing_left) {
+                    /*if (facing_left) {
                         runner.getBody().setLinearVelocity(7.5f, 10f);
                     }
                     else {
                         runner.getBody().setLinearVelocity(-7.5f, 10f);
-                    }
+                    }*/
 
                     runner.setHealth(runner.getHealth() - 1f);
 
-                    is_jumping = true;
-                    is_frozen = true;
+                    dog_attacked = true;
+
+                    //is_jumping = true;
+                    //is_frozen = true;
                 }
 
                 if(fixtureA.getBody().getUserData().toString().contains("Runner") &&
@@ -341,21 +331,19 @@ public class GameScreen implements Screen, InputProcessor {
         batch.draw(runner.getRunner(is_jumping), runner.getPosition().x, runner.getPosition().y, runner.getWidth(), runner.getHeight());
         //System.out.println(runner.getWidth());
 
-        for (Dogs dog : dogs) {
-            dog.updatePos();
+        if (move_dog) {
             dog.getBody().setLinearVelocity(10f, 0f);
-            dog.drawDog(batch);
 
-            System.out.println(dog.getBody().getPosition().x);
-            if (dog.getBody().getPosition().x > camera.position.x / 100f + (Gdx.graphics.getWidth() * 1.1f) / 200f) {
-                is_out_of_screen = true;
+            if (dog.getBody().getPosition().x > camera.position.x / 100f + (Gdx.graphics.getWidth() * 1.1f) / 200f || dog_attacked) {
+                move_dog = false;
+                dog_attacked = false;
+                dog.getBody().setLinearVelocity(0f, 0f);
+                dog.resetPos(camera);
             }
         }
 
-        if (is_out_of_screen) {
-            dogs.remove(0);
-            is_out_of_screen = false;
-        }
+        dog.updatePos();
+        dog.drawDog(batch);
 
         for (Mines mine : mines) {
             mine.drawMine(batch);
@@ -368,6 +356,50 @@ public class GameScreen implements Screen, InputProcessor {
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
+        drawTowerSpotlights();
+
+        shapeRenderer.setColor(80 / 255.0f, 80 / 255.0f, 50 / 255.0f, 0.5f);
+        shapeRenderer.rect(left_key.x, left_key.y, left_key.width, left_key.height);
+        shapeRenderer.rect(right_key.x, right_key.y, right_key.width, right_key.height);
+        shapeRenderer.rect(jump_key.x, jump_key.y, jump_key.width, jump_key.height);
+
+        health_bar.width = (Gdx.graphics.getWidth() * 0.9f) * (runner.getHealth() / 10f);
+
+        shapeRenderer.setColor(255 / 255.0f, 0 / 255.0f, 0 / 255.0f, 1);
+        shapeRenderer.rect(health_bar.x, health_bar.y, health_bar.width, health_bar.height);
+
+        shapeRenderer.end();
+        Gdx.gl.glDisable(GL20.GL_BLEND);
+
+        if (moving_left && !is_frozen) {
+            runner.getBody().setLinearVelocity(-7.5f, runner.getBody().getLinearVelocity().y);
+            runner.moveLeft();
+        }
+        else if (moving_right && !is_frozen) {
+            runner.getBody().setLinearVelocity(7.5f, runner.getBody().getLinearVelocity().y);
+            runner.moveRight();
+        }
+
+	}
+
+	public void readyToJump() {
+        if (!moving_left && !moving_right || is_frozen) {
+            runner.getBody().setLinearVelocity(0f, 0f);
+        }
+        else {
+            runner.getBody().setLinearVelocity(runner.getBody().getLinearVelocity().x, 0f);
+        }
+        if (facing_left) {
+            runner.keyUpLeft();
+        }
+        else {
+            runner.keyUpRight();
+        }
+        is_jumping = false;
+        is_frozen = false;
+    }
+
+    public void drawTowerSpotlights() {
         for (Towers tower : towers) {
             if (timers.get(towers.indexOf(tower)) < tower.getT()) {
                 tower.drawSpotlight(shapeRenderer, camera);
@@ -400,8 +432,9 @@ public class GameScreen implements Screen, InputProcessor {
                         screenShaker.shake(5, camera.position);
                         //runner.setHealth(runner.getHealth() - 0.1f);
 
-                        if (dogs.size() < 1) {
-                            dogs.add(new Dogs(world, camera));
+                        if (!move_dog) {
+                            dog.resetPos(camera);
+                            move_dog = true;
                         }
 
                         //time_to_shoot = true;
@@ -425,45 +458,6 @@ public class GameScreen implements Screen, InputProcessor {
                 }
             }*/
         }
-
-        shapeRenderer.setColor(80 / 255.0f, 80 / 255.0f, 50 / 255.0f, 1);
-        shapeRenderer.rect(left_key.x, left_key.y, left_key.width, left_key.height);
-        shapeRenderer.rect(right_key.x, right_key.y, right_key.width, right_key.height);
-
-        health_bar.width = (Gdx.graphics.getWidth() * 0.9f) * (runner.getHealth() / 10f);
-
-        shapeRenderer.setColor(255 / 255.0f, 0 / 255.0f, 0 / 255.0f, 1);
-        shapeRenderer.rect(health_bar.x, health_bar.y, health_bar.width, health_bar.height);
-
-        shapeRenderer.end();
-        Gdx.gl.glDisable(GL20.GL_BLEND);
-
-        if (moving_left && !is_frozen) {
-            runner.getBody().setLinearVelocity(-7.5f, runner.getBody().getLinearVelocity().y);
-            runner.moveLeft();
-        }
-        else if (moving_right && !is_frozen) {
-            runner.getBody().setLinearVelocity(7.5f, runner.getBody().getLinearVelocity().y);
-            runner.moveRight();
-        }
-
-	}
-
-	public void readyToJump() {
-        if (!moving_left && !moving_right) {
-            runner.getBody().setLinearVelocity(0f, 0f);
-        }
-        else {
-            runner.getBody().setLinearVelocity(runner.getBody().getLinearVelocity().x, 0f);
-        }
-        if (facing_left) {
-            runner.keyUpLeft();
-        }
-        else {
-            runner.keyUpRight();
-        }
-        is_jumping = false;
-        is_frozen = false;
     }
 
 	@Override
@@ -491,7 +485,6 @@ public class GameScreen implements Screen, InputProcessor {
 
 	@Override
 	public void dispose() {
-		img.dispose();
 		world.dispose();
 		runner.dispose();
 	}
@@ -531,10 +524,17 @@ public class GameScreen implements Screen, InputProcessor {
                 facing_left = false;
                 moving_right = true;
                 right_pointer = pointer;
-            } else {
+            } else if (screenX >= jump_key.x && screenX <= (jump_key.x + jump_key.width) //jump
+                    && (Gdx.graphics.getHeight() - screenY) >= jump_key.y && (Gdx.graphics.getHeight() - screenY) <= (jump_key.y + jump_key.height)
+                    && !is_jumping) {
+                runner.getBody().setLinearVelocity(runner.getBody().getLinearVelocity().x, 15f);
+                is_jumping = true;
+                runner.jump();
+            }
+            /*else {
                 old_screenX = screenX;
                 old_screenY = screenY;
-            }
+            }*/
         }
 
         return true;
@@ -565,13 +565,13 @@ public class GameScreen implements Screen, InputProcessor {
 
     @Override
     public boolean touchDragged(int screenX, int screenY, int pointer) {
-        if ((old_screenY - screenY) > 256 && (old_screenX - screenX) < 256 && !is_jumping) {
+        /*if ((old_screenY - screenY) > 256 && (old_screenX - screenX) < 256 && !is_jumping) {
             runner.getBody().setLinearVelocity(runner.getBody().getLinearVelocity().x, 15f);
             is_jumping = true;
             runner.jump();
-        }
+        }*/
 
-        return true;
+        return false;
     }
 
     @Override
