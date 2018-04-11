@@ -1,13 +1,12 @@
 package com.lamoid.ironcurtain.sprites;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Camera;
-import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.physics.box2d.*;
+import com.lamoid.ironcurtain.IronCurtain;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +15,6 @@ import java.util.Random;
 public class Towers {
     private Texture texture;
     private Sprite sprite;
-
 
     private int x;
     private int i = 0;
@@ -30,8 +28,8 @@ public class Towers {
     public Towers(float x1, float x2, float y) {
         texture = new Texture ("tower.png");
         sprite = new Sprite(texture);
-        sprite.setSize(Gdx.graphics.getWidth()/Gdx.graphics.getHeight() * sprite.getWidth() * 0.95f,
-                Gdx.graphics.getWidth()/Gdx.graphics.getHeight() * sprite.getHeight() * 0.95f);
+        sprite.setSize(IronCurtain.screenWidth/IronCurtain.screenHeight * sprite.getWidth() * 0.5f,
+                IronCurtain.screenWidth/IronCurtain.screenHeight * sprite.getHeight() * 0.5f);
 
         Random rand;
         rand = new Random();
@@ -48,12 +46,12 @@ public class Towers {
                 sprite.getY() + Gdx.graphics.getHeight(),
                 0, 50, 200, 20);*/
 
-        _x1 = sprite.getX() + sprite.getWidth() / 2 + Gdx.graphics.getWidth() / 2 - camera.position.x;
-        _y1 = (sprite.getY() + sprite.getHeight() + Gdx.graphics.getHeight() / 2) * 0.85f;
+        _x1 = sprite.getX() + sprite.getWidth() / 2 + IronCurtain.screenWidth / 2 - camera.position.x;
+        _y1 = (sprite.getY() + sprite.getHeight() + IronCurtain.screenHeight / 2) * 0.85f;
         //_y1 = sprite.getY() + Gdx.graphics.getHeight() * 0.95f;
-        _x2 = _x1 + Gdx.graphics.getWidth() * 0.05f;
+        _x2 = _x1 + IronCurtain.screenWidth * 0.05f;
         _y2 = _y1 - sprite.getHeight() * 0.75f;
-        _x3 = _x1 - Gdx.graphics.getWidth() * 0.05f;
+        _x3 = _x1 - IronCurtain.screenWidth * 0.05f;
         _y3 = _y2;
 
         if (check) {

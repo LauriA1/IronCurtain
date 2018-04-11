@@ -10,8 +10,6 @@ import com.lamoid.ironcurtain.screens.*;
 import java.util.Locale;
 
 public class IronCurtain extends Game {
-
-  	//public SpriteBatch batch;
 	public BitmapFont font;
     public Skin skin;
 
@@ -31,8 +29,12 @@ public class IronCurtain extends Game {
     private FileHandle baseFileHandle;
     public I18NBundle stringsBundle;
 
+    public static float screenWidth;
+    public static float screenHeight;
+
 	public void create() {
-		//batch = new SpriteBatch();
+	    screenWidth = (float)Gdx.graphics.getWidth();
+        screenHeight = (float)Gdx.graphics.getHeight();
 		// Use LibGDX's default Arial font.
 		font = new BitmapFont();
         skin = new Skin(Gdx.files.internal("skin/glassy-ui.json"));
@@ -81,7 +83,6 @@ public class IronCurtain extends Game {
 	}
 
 	public void dispose() {
-		//batch.dispose();
 		font.dispose();
 	}
 

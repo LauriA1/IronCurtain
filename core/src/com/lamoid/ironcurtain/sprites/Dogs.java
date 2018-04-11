@@ -1,11 +1,11 @@
 package com.lamoid.ironcurtain.sprites;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.physics.box2d.*;
+import com.lamoid.ironcurtain.IronCurtain;
 
 public class Dogs {
     private Texture texture;
@@ -19,10 +19,12 @@ public class Dogs {
     public Dogs(World world, Camera camera) {
         texture = new Texture("dog.png");
 
-        x = camera.position.x / 100f - (Gdx.graphics.getWidth() * 1.5f) / 200f;
-        y = (-Gdx.graphics.getHeight() * 0.8f) / 200f;
+        x = camera.position.x / 100f - (IronCurtain.screenWidth * 1.5f) / 200f;
+        y = (-IronCurtain.screenHeight * 0.8f) / 200f;
 
         sprite = new Sprite(texture);
+        sprite.setSize(IronCurtain.screenWidth/ IronCurtain.screenHeight * sprite.getWidth() * 0.5f,
+                IronCurtain.screenWidth/IronCurtain.screenHeight * sprite.getHeight() * 0.5f);
         sprite.setPosition(x, y);
 
         //create body
@@ -52,8 +54,8 @@ public class Dogs {
     }
 
     public void resetPos(Camera camera) {
-        x = camera.position.x / 100f - (Gdx.graphics.getWidth() * 1.5f) / 200f;
-        y = (-Gdx.graphics.getHeight() * 0.8f) / 200f;
+        x = camera.position.x / 100f - (IronCurtain.screenWidth * 1.5f) / 200f;
+        y = (-IronCurtain.screenHeight * 0.8f) / 200f;
         body.setTransform(x, y, body.getAngle());
     }
 

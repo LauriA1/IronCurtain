@@ -1,10 +1,10 @@
 package com.lamoid.ironcurtain.sprites;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.physics.box2d.*;
+import com.lamoid.ironcurtain.IronCurtain;
 
 import java.util.Random;
 
@@ -18,8 +18,8 @@ public class Mines {
     public Mines(World world, float x1, float x2, float y) {
         texture = new Texture ("mine.png");
         sprite = new Sprite(texture);
-        sprite.setSize(Gdx.graphics.getWidth()/Gdx.graphics.getHeight() * sprite.getWidth() * 0.5f,
-                Gdx.graphics.getWidth()/Gdx.graphics.getHeight() * sprite.getHeight() * 0.5f);
+        sprite.setSize(IronCurtain.screenWidth/IronCurtain.screenHeight * sprite.getWidth() * 0.3f,
+                IronCurtain.screenWidth/ IronCurtain.screenHeight * sprite.getHeight() * 0.3f);
 
         Random rand;
         rand = new Random();

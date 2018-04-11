@@ -27,10 +27,10 @@ public class IntroScreen implements Screen {
 
         Texture logo_texture = new Texture ("logo.png");
         Image splashImage = new Image(logo_texture);
-        splashImage.setSize(splashImage.getWidth()/splashImage.getHeight()*Gdx.graphics.getWidth()*0.6f,
-                splashImage.getHeight()/splashImage.getWidth()*Gdx.graphics.getHeight()*0.6f);
-        splashImage.setPosition((Gdx.graphics.getWidth() - splashImage.getWidth())/2,
-                (Gdx.graphics.getHeight() - splashImage.getHeight())/2);
+        splashImage.setSize(splashImage.getWidth() / splashImage.getHeight() * IronCurtain.screenWidth * 0.4f,
+                splashImage.getHeight() / splashImage.getWidth() * IronCurtain.screenHeight * 0.4f);
+        splashImage.setPosition((IronCurtain.screenWidth - splashImage.getWidth())/2,
+                (IronCurtain.screenHeight - splashImage.getHeight())/2);
 
         splashImage.addAction(Actions.sequence(Actions.fadeIn(2f),
                 Actions.fadeOut(2f), Actions.run(onSplashFinishedRunnable)));

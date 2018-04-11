@@ -66,7 +66,7 @@ public class GameScreen implements Screen, InputProcessor {
         stage = new Stage(new ScreenViewport());
 
         batch = new SpriteBatch();
-        camera = new OrthographicCamera(Gdx.graphics.getWidth(),Gdx.graphics.getHeight());
+        camera = new OrthographicCamera(IronCurtain.screenWidth, IronCurtain.screenHeight);
         screenShaker = new ScreenShaker(camera, 32);
         world = new World(new Vector2(0, -20f),true);
         map = new Map(world);
@@ -75,9 +75,9 @@ public class GameScreen implements Screen, InputProcessor {
         towers = new ArrayList<Towers>();
         dog = new Dogs(world, camera);
 
-        float x1 = map.getSprite().getX() + Gdx.graphics.getWidth();
-        float x2 = map.getSprite().getX() + map.getSprite().getWidth() - Gdx.graphics.getWidth();
-        float y = (Gdx.graphics.getHeight() / 2) * -1;
+        float x1 = map.getSprite().getX() + IronCurtain.screenWidth;
+        float x2 = map.getSprite().getX() + map.getSprite().getWidth() - IronCurtain.screenWidth;
+        float y = (IronCurtain.screenHeight / 2) * -1;
 
         for (int i = 0; i < tower_count; i++) {
             towers.add(new Towers((x2 - x1) / tower_count * i,
@@ -93,21 +93,21 @@ public class GameScreen implements Screen, InputProcessor {
         }
 
         moving_key = new Rectangle();
-        moving_key.x = Gdx.graphics.getWidth() * 0.05f;
+        moving_key.x = IronCurtain.screenWidth * 0.05f;
         moving_key.y = moving_key.x;
         moving_key.width = moving_key.x * 4;
         moving_key.height = moving_key.width/2;
 
         jump_key = new Rectangle();
-        jump_key.x = Gdx.graphics.getWidth() - (Gdx.graphics.getWidth() * 0.15f);
+        jump_key.x = IronCurtain.screenWidth - (IronCurtain.screenWidth * 0.15f);
         jump_key.y = moving_key.y;
         jump_key.width = moving_key.width/2;
         jump_key.height = moving_key.height;
 
         health_bar = new Rectangle();
         health_bar.x = moving_key.x;
-        health_bar.y = Gdx.graphics.getHeight() * 0.95f;
-        health_bar.width = (Gdx.graphics.getWidth() * 0.9f) * (runner.getHealth() / 10f);
+        health_bar.y = IronCurtain.screenHeight * 0.95f;
+        health_bar.width = (IronCurtain.screenWidth * 0.9f) * (runner.getHealth() / 10f);
         health_bar.height = moving_key.height / 10;
 
         shapeRenderer = new ShapeRenderer();
@@ -210,7 +210,7 @@ public class GameScreen implements Screen, InputProcessor {
 
         old_cameraX = camera.position.x;
         //System.out.println(runner.getPosition().x + Gdx.graphics.getWidth() / 2);
-        if (runner.getPosition().x >= 32 && runner.getPosition().x <= map.getLength() - Gdx.graphics.getWidth()) {
+        if (runner.getPosition().x >= 32 && runner.getPosition().x <= map.getLength() - IronCurtain.screenWidth) {
             camera.position.set(runner.getPosition().x , 0, 0);
         }
 
@@ -245,7 +245,7 @@ public class GameScreen implements Screen, InputProcessor {
         if (move_dog) {
             dog.getBody().setLinearVelocity(10f, 0f);
 
-            if (dog.getBody().getPosition().x > camera.position.x / 100f + (Gdx.graphics.getWidth() * 1.1f) / 200f || dog_attacked) {
+            if (dog.getBody().getPosition().x > camera.position.x / 100f + (IronCurtain.screenWidth * 1.1f) / 200f || dog_attacked) {
                 move_dog = false;
                 dog_attacked = false;
                 dog.getBody().setLinearVelocity(0f, 0f);
@@ -273,7 +273,7 @@ public class GameScreen implements Screen, InputProcessor {
         shapeRenderer.rect(moving_key.x, moving_key.y, moving_key.width, moving_key.height);
         shapeRenderer.rect(jump_key.x, jump_key.y, jump_key.width, jump_key.height);
 
-        health_bar.width = (Gdx.graphics.getWidth() * 0.9f) * (runner.getHealth() / 10f);
+        health_bar.width = (IronCurtain.screenWidth * 0.9f) * (runner.getHealth() / 10f);
 
         shapeRenderer.setColor(255 / 255.0f, 0 / 255.0f, 0 / 255.0f, 1);
         shapeRenderer.rect(health_bar.x, health_bar.y, health_bar.width, health_bar.height);
@@ -312,12 +312,12 @@ public class GameScreen implements Screen, InputProcessor {
                 boolean check1 = false;
                 boolean check2 = false;
 
-                //System.out.print("runner.x: " + runner.getPosition().x + Gdx.graphics.getWidth() / 2);
+                //System.out.print("runner.x: " + (runner.getPosition().x - runner.getWidth()/2 + Gdx.graphics.getWidth()/2));
 
                 for (Float coordinate : coordinates) {
                     if (coordinates.indexOf(coordinate) == 0) {
                         //System.out.print(" | tower" + towers.indexOf(tower) + ": " + (coordinate + camera.position.x));
-                        if (runner.getPosition().x + runner.getWidth() + Gdx.graphics.getWidth() / 2
+                        if (runner.getPosition().x + IronCurtain.screenWidth/2
                                 <= coordinate + camera.position.x) {
                             check1 = true;
                         }
@@ -325,8 +325,8 @@ public class GameScreen implements Screen, InputProcessor {
 
                     if (coordinates.indexOf(coordinate) == 1) {
                         //System.out.println(", " + (coordinate + camera.position.x));
-                        if (runner.getPosition().x + Gdx.graphics.getWidth() / 2
-                                >= (coordinate + camera.position.x)) {
+                        if (runner.getPosition().x + runner.getWidth()/2 + IronCurtain.screenWidth/2
+                                >= coordinate + camera.position.x) {
                             check2 = true;
                         }
                     }
@@ -442,8 +442,8 @@ public class GameScreen implements Screen, InputProcessor {
 
         if(Gdx.input.isTouched()
                 && touchX >= moving_key.x && touchX <= moving_key.x + moving_key.width
-                && Gdx.graphics.getHeight() - touchY >= moving_key.y
-                && Gdx.graphics.getHeight() - touchY <= moving_key.y + moving_key.height) {
+                && IronCurtain.screenHeight - touchY >= moving_key.y
+                && IronCurtain.screenHeight - touchY <= moving_key.y + moving_key.height) {
             if (!is_frozen) {
                 if (touchX >= moving_key.x && touchX <= (moving_key.x + moving_key.width/2)) //left
                 {
@@ -484,7 +484,7 @@ public class GameScreen implements Screen, InputProcessor {
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
         //System.out.println("touchDown registered!");
         if (screenX >= jump_key.x && screenX <= (jump_key.x + jump_key.width) //jump
-                && (Gdx.graphics.getHeight() - screenY) >= jump_key.y && (Gdx.graphics.getHeight() - screenY) <= (jump_key.y + jump_key.height)
+                && (IronCurtain.screenHeight - screenY) >= jump_key.y && (IronCurtain.screenHeight - screenY) <= (jump_key.y + jump_key.height)
                 && !is_jumping) {
             runner.getBody().setLinearVelocity(runner.getBody().getLinearVelocity().x, 15f);
             is_jumping = true;

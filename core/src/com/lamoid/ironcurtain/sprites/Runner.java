@@ -1,12 +1,12 @@
 package com.lamoid.ironcurtain.sprites;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.*;
+import com.lamoid.ironcurtain.IronCurtain;
 import com.lamoid.ironcurtain.utils.Animation;
 
 
@@ -33,8 +33,8 @@ public class Runner {
         velocity = new Vector3(0,0,0);
         runner = new Texture("runner.png");
         runnerSprite = new Sprite(runner);
-        runnerSprite.setSize(Gdx.graphics.getWidth()/Gdx.graphics.getHeight() * runnerSprite.getWidth() * 0.95f,
-                Gdx.graphics.getWidth()/Gdx.graphics.getHeight() * runnerSprite.getHeight() * 0.95f);
+        runnerSprite.setSize(IronCurtain.screenWidth/IronCurtain.screenHeight * runnerSprite.getWidth() * 0.5f,
+                IronCurtain.screenWidth/IronCurtain.screenHeight * runnerSprite.getHeight() * 0.5f);
 
         runnerAnimation = new Animation(new TextureRegion(runner), frameCount, 10.5f);
         bounds = new Rectangle(x, y, runner.getWidth(), runner.getHeight());
