@@ -1,14 +1,11 @@
 package com.lamoid.ironcurtain.screens;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
@@ -18,7 +15,6 @@ import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Dialog;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
-import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
 import com.lamoid.ironcurtain.IronCurtain;
@@ -32,7 +28,7 @@ public class GameScreen implements Screen, InputProcessor {
     private SpriteBatch batch;
     private World world;
     private OrthographicCamera camera;
-    private Rectangle left_key, right_key, jump_key, health_bar;
+    private Rectangle moving_key, jump_key, health_bar;
     private ShapeRenderer shapeRenderer;
 
     private Runner runner;
@@ -54,11 +50,6 @@ public class GameScreen implements Screen, InputProcessor {
 
     private float shoot_timer = 0;
     private int tower_index = 0;
-
-    private int old_screenX = 0;
-    private int old_screenY = 0;
-    private int left_pointer = 0;
-    private int right_pointer = 0;
 
     private float old_cameraX = 0;
 
@@ -101,29 +92,23 @@ public class GameScreen implements Screen, InputProcessor {
                     (x2 - x1) / tower_count * (i + 1), y));
         }
 
-        left_key = new Rectangle();
-        left_key.x = Gdx.graphics.getWidth() * 0.05f;
-        left_key.y = left_key.x;
-        left_key.width = left_key.x * 2;
-        left_key.height = left_key.width;
-
-        right_key = new Rectangle();
-        right_key.x = left_key.x + left_key.width * 1.15f;
-        right_key.y = left_key.y;
-        right_key.width = left_key.width;
-        right_key.height = left_key.height;
+        moving_key = new Rectangle();
+        moving_key.x = Gdx.graphics.getWidth() * 0.05f;
+        moving_key.y = moving_key.x;
+        moving_key.width = moving_key.x * 4;
+        moving_key.height = moving_key.width/2;
 
         jump_key = new Rectangle();
         jump_key.x = Gdx.graphics.getWidth() - (Gdx.graphics.getWidth() * 0.15f);
-        jump_key.y = left_key.y;
-        jump_key.width = left_key.width;
-        jump_key.height = left_key.height;
+        jump_key.y = moving_key.y;
+        jump_key.width = moving_key.width/2;
+        jump_key.height = moving_key.height;
 
         health_bar = new Rectangle();
-        health_bar.x = left_key.x;
+        health_bar.x = moving_key.x;
         health_bar.y = Gdx.graphics.getHeight() * 0.95f;
         health_bar.width = (Gdx.graphics.getWidth() * 0.9f) * (runner.getHealth() / 10f);
-        health_bar.height = left_key.height / 10;
+        health_bar.height = moving_key.height / 10;
 
         shapeRenderer = new ShapeRenderer();
 
@@ -213,6 +198,8 @@ public class GameScreen implements Screen, InputProcessor {
 
         //camera.position.set(sprite.getX() + sprite.getWidth() / 2, 0, 0);
 
+        handleInput();
+
         if (runner.getHealth() <= 0) {
             game.changeScreen(IronCurtain.THEGAME);
         }
@@ -283,8 +270,7 @@ public class GameScreen implements Screen, InputProcessor {
         drawTowerSpotlights();
 
         shapeRenderer.setColor(80 / 255.0f, 80 / 255.0f, 50 / 255.0f, 0.5f);
-        shapeRenderer.rect(left_key.x, left_key.y, left_key.width, left_key.height);
-        shapeRenderer.rect(right_key.x, right_key.y, right_key.width, right_key.height);
+        shapeRenderer.rect(moving_key.x, moving_key.y, moving_key.width, moving_key.height);
         shapeRenderer.rect(jump_key.x, jump_key.y, jump_key.width, jump_key.height);
 
         health_bar.width = (Gdx.graphics.getWidth() * 0.9f) * (runner.getHealth() / 10f);
@@ -294,15 +280,6 @@ public class GameScreen implements Screen, InputProcessor {
 
         shapeRenderer.end();
         Gdx.gl.glDisable(GL20.GL_BLEND);
-
-        if (moving_left && !is_frozen) {
-            runner.getBody().setLinearVelocity(-7.5f, runner.getBody().getLinearVelocity().y);
-            runner.moveLeft();
-        }
-        else if (moving_right && !is_frozen) {
-            runner.getBody().setLinearVelocity(7.5f, runner.getBody().getLinearVelocity().y);
-            runner.moveRight();
-        }
 
         stage.act(delta);
         stage.draw();
@@ -459,70 +436,70 @@ public class GameScreen implements Screen, InputProcessor {
         return false;
     }
 
+    private void handleInput() {
+        float touchX = Gdx.input.getX();
+        float touchY = Gdx.input.getY();
+
+        if(Gdx.input.isTouched()
+                && touchX >= moving_key.x && touchX <= moving_key.x + moving_key.width
+                && Gdx.graphics.getHeight() - touchY >= moving_key.y
+                && Gdx.graphics.getHeight() - touchY <= moving_key.y + moving_key.height) {
+            if (!is_frozen) {
+                if (touchX >= moving_key.x && touchX <= (moving_key.x + moving_key.width/2)) //left
+                {
+                    runner.getBody().setLinearVelocity(-7.5f, runner.getBody().getLinearVelocity().y);
+                    runner.moveLeft();
+                    facing_left = true;
+                    moving_left = true;
+                    moving_right = false;
+                }
+                else if (touchX >= moving_key.x + moving_key.width/2 && touchX <= moving_key.x + moving_key.width) //right
+                {
+                    runner.getBody().setLinearVelocity(7.5f, runner.getBody().getLinearVelocity().y);
+                    runner.moveRight();
+                    facing_left = false;
+                    moving_right = true;
+                    moving_left = false;
+                }
+            }
+        } else {
+            if (moving_left) {
+                moving_left = false;
+                runner.keyUpLeft();
+            }
+            if (moving_right) {
+                moving_right = false;
+                runner.keyUpRight();
+            }
+            if (!moving_left && !moving_right && is_jumping && !is_frozen) {
+                runner.getBody().setLinearVelocity(0f, runner.getBody().getLinearVelocity().y);
+            }
+            if (!moving_left && !moving_right && !is_jumping && !is_frozen) {
+                runner.getBody().setLinearVelocity(0f, 0f);
+            }
+        }
+    }
+
     @Override
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
         //System.out.println("touchDown registered!");
-        if (!is_frozen) {
-            if (screenX >= left_key.x && screenX <= (left_key.x + left_key.width) //left
-                    && (Gdx.graphics.getHeight() - screenY) >= left_key.y && (Gdx.graphics.getHeight() - screenY) <= (left_key.y + left_key.height)) {
-                if (moving_right) {
-                    runner.getBody().setLinearVelocity(0f, runner.getBody().getLinearVelocity().y);
-                }
-                facing_left = true;
-                moving_left = true;
-                left_pointer = pointer;
-            } else if (screenX >= right_key.x && screenX <= (right_key.x + right_key.width) //right
-                    && (Gdx.graphics.getHeight() - screenY) >= right_key.y && (Gdx.graphics.getHeight() - screenY) <= (right_key.y + right_key.height)) {
-                if (moving_left) {
-                    runner.getBody().setLinearVelocity(0f, runner.getBody().getLinearVelocity().y);
-                }
-                facing_left = false;
-                moving_right = true;
-                right_pointer = pointer;
-            } else if (screenX >= jump_key.x && screenX <= (jump_key.x + jump_key.width) //jump
-                    && (Gdx.graphics.getHeight() - screenY) >= jump_key.y && (Gdx.graphics.getHeight() - screenY) <= (jump_key.y + jump_key.height)
-                    && !is_jumping) {
-                runner.getBody().setLinearVelocity(runner.getBody().getLinearVelocity().x, 15f);
-                is_jumping = true;
-                runner.jump();
-            }
-            /*else {
-                old_screenX = screenX;
-                old_screenY = screenY;
-            }*/
+        if (screenX >= jump_key.x && screenX <= (jump_key.x + jump_key.width) //jump
+                && (Gdx.graphics.getHeight() - screenY) >= jump_key.y && (Gdx.graphics.getHeight() - screenY) <= (jump_key.y + jump_key.height)
+                && !is_jumping) {
+            runner.getBody().setLinearVelocity(runner.getBody().getLinearVelocity().x, 15f);
+            is_jumping = true;
+            runner.jump();
         }
         return true;
     }
 
     @Override
     public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-        if (moving_left && pointer == left_pointer) {
-            moving_left = false;
-            runner.keyUpLeft();
-        }
-
-        if (moving_right && pointer == right_pointer) {
-            moving_right = false;
-            runner.keyUpRight();
-        }
-
-        if (!moving_left && !moving_right && is_jumping && !is_frozen) {
-            runner.getBody().setLinearVelocity(0f, runner.getBody().getLinearVelocity().y);
-        }
-
-        if (!moving_left && !moving_right && !is_jumping && !is_frozen) {
-            runner.getBody().setLinearVelocity(0f, 0f);
-        }
-        return true;
+        return false;
     }
 
     @Override
     public boolean touchDragged(int screenX, int screenY, int pointer) {
-        /*if ((old_screenY - screenY) > 256 && (old_screenX - screenX) < 256 && !is_jumping) {
-            runner.getBody().setLinearVelocity(runner.getBody().getLinearVelocity().x, 15f);
-            is_jumping = true;
-            runner.jump();
-        }*/
         return false;
     }
 
