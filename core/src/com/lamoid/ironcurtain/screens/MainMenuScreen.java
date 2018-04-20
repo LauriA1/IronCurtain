@@ -41,8 +41,9 @@ public class MainMenuScreen implements Screen {
 
         texture = new Texture("background1.png");
         background_sprite = new Sprite(texture);
-        background_sprite.setSize(background_sprite.getWidth()/background_sprite.getHeight()*Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        background_sprite.setPosition((Gdx.graphics.getWidth() - background_sprite.getWidth())/2,0);
+        background_sprite.setSize(background_sprite.getWidth() / background_sprite.getHeight()
+                * IronCurtain.screenHeight, IronCurtain.screenHeight);
+        background_sprite.setPosition((IronCurtain.screenWidth - background_sprite.getWidth())/2,0);
 
         TextButton play_button = new TextButton(game.stringsBundle.get("play"), game.skin, "custom");
         TextButton settings_button = new TextButton(game.stringsBundle.get("settings"), game.skin, "custom");
@@ -59,6 +60,7 @@ public class MainMenuScreen implements Screen {
                     @Override
                     public void changed(ChangeEvent event, Actor actor) {
                         game.changeScreen(IronCurtain.THEGAME);
+                        game.setMusicStop();
                     }
                 });
 

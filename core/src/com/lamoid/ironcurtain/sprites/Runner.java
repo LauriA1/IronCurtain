@@ -1,6 +1,5 @@
 package com.lamoid.ironcurtain.sprites;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -8,6 +7,7 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.*;
 import com.lamoid.ironcurtain.utils.Animation;
+import com.lamoid.ironcurtain.IronCurtain;
 
 
 public class Runner {
@@ -15,8 +15,7 @@ public class Runner {
     private static final int MOVEMENT = 500;
     private Texture runner;
     private Vector3 position;
-    private Vector3 velocity;
-    private Rectangle bounds;
+    //private Rectangle bounds;
     private Sprite runnerSprite;
     private Animation runnerAnimation;
     private Body body;
@@ -30,14 +29,14 @@ public class Runner {
 
     public Runner(World world, float x, float y){
         position = new Vector3(x, y, 0);
-        velocity = new Vector3(0,0,0);
         runner = new Texture("runner.png");
         runnerSprite = new Sprite(runner);
-        runnerSprite.setSize(Gdx.graphics.getWidth()/Gdx.graphics.getHeight() * runnerSprite.getWidth() * 0.95f,
-                Gdx.graphics.getWidth()/Gdx.graphics.getHeight() * runnerSprite.getHeight() * 0.95f);
+        runnerSprite.setSize(IronCurtain.screenWidth/IronCurtain.screenHeight * runnerSprite.getWidth() * 0.5f,
+                IronCurtain.screenWidth/IronCurtain.screenHeight * runnerSprite.getHeight() * 0.5f);
 
         runnerAnimation = new Animation(new TextureRegion(runner), frameCount, 10.5f);
-        bounds = new Rectangle(x, y, runner.getWidth(), runner.getHeight());
+        moveRight();
+        //bounds = new Rectangle(x, y, runner.getWidth(), runner.getHeight());
         //System.out.println(runner.getHeight() + " : " + runner.getWidth());
 
         health = 10f;
@@ -90,13 +89,6 @@ public class Runner {
 
         velocity.scl(1/dt);
         bounds.setPosition(position.x, position.y);*/
-    }
-
-    public void jump(){
-        if(position.y < 35)
-            velocity.y = 300;
-
-        //runnerAnimation.setDirection(0.5f,true, false);
     }
 
     public void moveRight(){

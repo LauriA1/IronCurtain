@@ -2,6 +2,7 @@ package com.lamoid.ironcurtain;
 
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
@@ -11,7 +12,6 @@ import java.util.Locale;
 
 public class IronCurtain extends Game {
 
-  	//public SpriteBatch batch;
 	public BitmapFont font;
     public Skin skin;
 
@@ -21,6 +21,7 @@ public class IronCurtain extends Game {
 	private GameScreen gameScreen;
 	private EndScreen endScreen;
 	private Settings settings;
+    public Music mainMenuBackgroundMusic;
 
 	public final static int MAINMENU = 0;
 	public final static int SETTINGS = 1;
@@ -31,14 +32,23 @@ public class IronCurtain extends Game {
     private FileHandle baseFileHandle;
     public I18NBundle stringsBundle;
 
+    public static float screenWidth;
+    public static float screenHeight;
+
 	public void create() {
-		//batch = new SpriteBatch();
+        screenWidth = (float)Gdx.graphics.getWidth();
+        screenHeight = (float)Gdx.graphics.getHeight();
+
 		// Use LibGDX's default Arial font.
 		font = new BitmapFont();
         skin = new Skin(Gdx.files.internal("skin/glassy-ui.json"));
 
         introScreen = new IntroScreen(this);
         settings = new Settings();
+
+        mainMenuBackgroundMusic = Gdx.audio.newMusic(Gdx.files.internal("menu.mp3"));
+        mainMenuBackgroundMusic.setLooping(true);
+        mainMenuBackgroundMusic.setVolume(this.getPreferences().getMusicVolume());
 
         if(this.getPreferences().getLanguage().equals("Suomi")) {
             locale = new Locale("fi");
@@ -54,6 +64,9 @@ public class IronCurtain extends Game {
 	public void changeScreen(int newScreen){
         switch(newScreen){
             case MAINMENU:
+                if(this.getPreferences().isMusicEnabled()){
+                    this.setMusicPlay();
+                }
                 mainMenuScreen = new MainMenuScreen(this);
                 this.setScreen(mainMenuScreen);
                 break;
@@ -76,12 +89,24 @@ public class IronCurtain extends Game {
         return this.settings;
     }
 
+    public void setMusicStop() {
+        mainMenuBackgroundMusic.stop();
+    }
+    public void setMusicPlay() {
+        mainMenuBackgroundMusic.play();
+    }
+    public void setMusicVolume() {
+        mainMenuBackgroundMusic.setVolume(this.getPreferences().getMusicVolume());
+    }
+    public float getMusicVolume() {
+        return mainMenuBackgroundMusic.getVolume();
+    }
+
 	public void render() {
 		super.render(); // important!
 	}
 
 	public void dispose() {
-		//batch.dispose();
 		font.dispose();
 	}
 

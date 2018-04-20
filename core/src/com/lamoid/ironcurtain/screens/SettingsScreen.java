@@ -50,8 +50,9 @@ public class SettingsScreen implements Screen{
 
         texture = new Texture("background1.png");
         background_sprite = new Sprite(texture);
-        background_sprite.setSize(background_sprite.getWidth()/background_sprite.getHeight()*Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        background_sprite.setPosition((Gdx.graphics.getWidth() - background_sprite.getWidth())/2,0);
+        background_sprite.setSize(background_sprite.getWidth() / background_sprite.getHeight()
+                * IronCurtain.screenHeight, IronCurtain.screenHeight);
+        background_sprite.setPosition((IronCurtain.screenWidth - background_sprite.getWidth())/2,0);
 
         final SelectBox<String> languageSelectBox = new SelectBox<String>(game.skin, "custom");
         languageSelectBox.setItems("English", "Suomi");
@@ -161,11 +162,21 @@ public class SettingsScreen implements Screen{
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
+        if(!game.getPreferences().isMusicEnabled()){
+            game.setMusicStop();
+        }
+        if(game.getPreferences().isMusicEnabled()){
+            game.setMusicPlay();
+        }
+        if(game.getMusicVolume() != game.getPreferences().getMusicVolume()) {
+            game.setMusicVolume();
+        }
+
         batch.begin();
         background_sprite.draw(batch);
         if(languageChanged) {
-            game.font.draw(batch, game.stringsBundle.get("languageChanged"), Gdx.graphics.getWidth()*0.2f,
-                    Gdx.graphics.getHeight()*0.2f);
+            game.font.draw(batch, game.stringsBundle.get("languageChanged"), IronCurtain.screenWidth*0.2f,
+                    IronCurtain.screenHeight*0.2f);
 
             Timer.schedule(new Task(){
                 @Override
