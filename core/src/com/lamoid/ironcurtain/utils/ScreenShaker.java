@@ -1,7 +1,6 @@
 package com.lamoid.ironcurtain.utils;
 
 import java.util.Random;
-
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Peripheral;
 import com.badlogic.gdx.graphics.Camera;
