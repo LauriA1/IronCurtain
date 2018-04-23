@@ -14,6 +14,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.actions.SequenceAction;
 import com.badlogic.gdx.scenes.scene2d.ui.Dialog;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
@@ -21,6 +22,9 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.lamoid.ironcurtain.IronCurtain;
 import com.lamoid.ironcurtain.sprites.*;
 import com.lamoid.ironcurtain.utils.*;
+
+import static com.badlogic.gdx.scenes.scene2d.actions.Actions.fadeOut;
+import static com.badlogic.gdx.scenes.scene2d.actions.Actions.run;
 
 public class GameScreen implements Screen, InputProcessor {
   	private final IronCurtain game;
@@ -56,7 +60,6 @@ public class GameScreen implements Screen, InputProcessor {
     boolean dog_attacked = false;
     boolean shoot_missile = false;
     boolean missile_direction = false;
-    boolean map_finished = false;
 
     private float missile_timer = 0;
     private float attack_delay = 0;
@@ -66,8 +69,8 @@ public class GameScreen implements Screen, InputProcessor {
 
     private float old_cameraX = 0;
 
-    private int mine_count = 8;
-    private int tower_count = 6;
+    private int mine_count = 12;
+    private int tower_count = 4;
 
     private float deltaTime = 45f;
 
@@ -252,7 +255,7 @@ public class GameScreen implements Screen, InputProcessor {
         //timer_bar.width = (IronCurtain.screenWidth * 0.9f) * (deltaTime * (100f / 35f)) / 100f;
 
         runner.setHealth(runner.getMaxHealth() * ((deltaTime * (100f / 45f)) / 100f));
-        System.out.println(deltaTime);
+        //System.out.println(deltaTime);
 
         for (int i = 0; i < tower_count; i++) {
             timers.set(i, timers.get(i) + delta);
@@ -272,13 +275,6 @@ public class GameScreen implements Screen, InputProcessor {
 
         // Step the physics simulation forward at a rate of 60hz
         world.step(1f/60f, 6, 2);
-
-        if (runner.getHealth() <= 0 || deltaTime <= 0 || runner.getPosition().x >= map.getLength() - IronCurtain.screenWidth) {
-            if (!map_finished) {
-                game.changeScreen(IronCurtain.ENDGAME, runner.getHealth());
-                map_finished = true;
-            }
-        }
 
         if (dog != null && !move_dog) {
             world.destroyBody(dog.getBody());
@@ -437,15 +433,28 @@ public class GameScreen implements Screen, InputProcessor {
 
         stage.act(delta);
         stage.draw();
+
+        if (runner.getHealth() <= 0 || deltaTime <= 0 || runner.getPosition().x >= map.getLength() - IronCurtain.screenWidth / 2) {
+            stage.getRoot().getColor().a = 1;
+            SequenceAction sequenceAction = new SequenceAction();
+            sequenceAction.addAction(fadeOut(3f));
+            sequenceAction.addAction(run(new Runnable() {
+                @Override
+                public void run() {
+                    game.changeScreen(IronCurtain.ENDGAME, runner.getHealth());
+                }
+            }));
+            stage.getRoot().addAction(sequenceAction);
+        }
 	}
 
     public void readyToJump() {
-        if (!moving_left && !moving_right || is_frozen) {
+        /*if (!moving_left && !moving_right || is_frozen) {
             runner.getBody().setLinearVelocity(0f, 0f);
         }
         else {
             runner.getBody().setLinearVelocity(runner.getBody().getLinearVelocity().x, 0f);
-        }
+        }*/
         if (facing_left) {
             runner.keyUpLeft();
         }
@@ -635,7 +644,7 @@ public class GameScreen implements Screen, InputProcessor {
             if (!is_frozen) {
                 if (touchX >= moving_key.x && touchX <= (moving_key.x + moving_key.width/2)) //left
                 {
-                    runner.getBody().setLinearVelocity(-7.5f, runner.getBody().getLinearVelocity().y);
+                    runner.getBody().setLinearVelocity(-10f, runner.getBody().getLinearVelocity().y);
                     runner.moveLeft();
                     facing_left = true;
                     moving_left = true;
@@ -643,7 +652,7 @@ public class GameScreen implements Screen, InputProcessor {
                 }
                 else if (touchX >= moving_key.x + moving_key.width/2 && touchX <= moving_key.x + moving_key.width) //right
                 {
-                    runner.getBody().setLinearVelocity(7.5f, runner.getBody().getLinearVelocity().y);
+                    runner.getBody().setLinearVelocity(10f, runner.getBody().getLinearVelocity().y);
                     runner.moveRight();
                     facing_left = false;
                     moving_right = true;
