@@ -62,12 +62,12 @@ public class Missile {
         Random rand;
         rand = new Random();
 
-        if ((rand.nextInt(((int)2 - (int)1) + 1) + (int)1) == 1) {
-            x = camera.position.x / 100f;
-        }
-        else {
+        //if ((rand.nextInt(((int)2 - (int)1) + 1) + (int)1) == 1) {
+        x = camera.position.x / 100f - IronCurtain.screenWidth / 100f;
+        //}
+        /*else {
             x = camera.position.x / 100f + IronCurtain.screenWidth / 100f;
-        }
+        }*/
 
         y = Gdx.graphics.getHeight() / 200f;
         body.setTransform(x, y, body.getAngle());

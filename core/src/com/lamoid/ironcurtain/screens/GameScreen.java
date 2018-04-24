@@ -7,7 +7,10 @@ import com.badlogic.gdx.*;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
@@ -39,8 +42,11 @@ public class GameScreen implements Screen, InputProcessor {
     private Sound barking;
     private Sound mine_explosion;
     private Sound missile_launch;
-    //private Sound missile_impact;
     private Body explodedMine;
+    private FreeTypeFontGenerator generator;
+    private FreeTypeFontGenerator.FreeTypeFontParameter parameter;
+    private BitmapFont font256;
+    private GlyphLayout startDelayLayout;
 
     private Runner runner;
     private Dogs dog;
@@ -54,7 +60,7 @@ public class GameScreen implements Screen, InputProcessor {
     private boolean moving_left = false;
     private boolean moving_right = false;
     private boolean is_jumping = true;
-    private boolean is_frozen = false;
+    private boolean is_frozen = true;
     private boolean facing_left = false;
     boolean move_dog = false;
     boolean dog_attacked = false;
@@ -69,12 +75,16 @@ public class GameScreen implements Screen, InputProcessor {
 
     private float old_cameraX = 0;
 
-    private int mine_count = 12;
-    private int tower_count = 4;
+    private int mine_count = 20;
+    private int tower_count = 10;
 
-    private float deltaTime = 45f;
+    private float timeLimit = 85f;
+    private float startDelay = 4.5f;
 
     private float volume = 0;
+
+    private String str_startDelay;
+    float fontX, fontY;
 
     private List<Float> timers;
 
@@ -101,10 +111,10 @@ public class GameScreen implements Screen, InputProcessor {
         }
 
         float x1 = map.getSprite().getX() + IronCurtain.screenWidth;
-        float x2 = map.getSprite().getX() + map.getSprite().getWidth() - IronCurtain.screenWidth;
+        float x2 = map.getSprite().getX() + map.getLength() - IronCurtain.screenWidth / 2f;
         float y = (IronCurtain.screenHeight / 2) * -1;
 
-        for (int i = 0; i < tower_count; i++) {
+        for (int i = 1; i < tower_count + 1; i++) {
             towers.add(new Towers((x2 - x1) / tower_count * i,
                     (x2 - x1) / tower_count * (i + 1), y));
             timers.add(new Float(0));
@@ -112,7 +122,7 @@ public class GameScreen implements Screen, InputProcessor {
 
         mines = new ArrayList<Mines>();
 
-        for (int i = 0; i < mine_count; i++) {
+        for (int i = 1; i < mine_count + 1; i++) {
             mines.add(new Mines(world, (x2 - x1) / mine_count * i,
                     (x2 - x1) / mine_count * (i + 1), y));
         }
@@ -143,6 +153,12 @@ public class GameScreen implements Screen, InputProcessor {
 
         shapeRenderer = new ShapeRenderer();
 
+        generator = new FreeTypeFontGenerator(Gdx.files.internal("BebasNeue.ttf"));
+        parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        parameter.size = 256;
+        font256 = generator.generateFont(parameter);
+        generator.dispose();
+
         Gdx.input.setCatchBackKey(true);
         Gdx.input.setInputProcessor(new InputMultiplexer(stage, this));
 
@@ -172,7 +188,9 @@ public class GameScreen implements Screen, InputProcessor {
                         runner.getBody().setLinearVelocity(-7.5f, 10f);
                     }*/
 
-                    runner.decreaseHealth(1f);
+                    if (!dog_attacked) {
+                        runner.decreaseHealth(1f);
+                    }
 
                     dog_attacked = true;
 
@@ -248,14 +266,32 @@ public class GameScreen implements Screen, InputProcessor {
 
         //camera.position.set(sprite.getX() + sprite.getWidth() / 2, 0, 0);
 
-        deltaTime -= Gdx.graphics.getDeltaTime();
+        if (startDelay > 0f) {
+            startDelay -= Gdx.graphics.getDeltaTime();
+        }
+        if (startDelay > 3f) {
+            setStartDelayText("3");
+        }
+        else if (startDelay > 2f) {
+            setStartDelayText("2");
+        }
+        else if (startDelay > 1f) {
+            setStartDelayText("1");
+        }
+        else {
+            if (startDelay > 0f) {
+                setStartDelayText("GO");
+                is_frozen = false;
+            }
+            timeLimit -= Gdx.graphics.getDeltaTime();
+        }
 
         handleInput();
 
-        //timer_bar.width = (IronCurtain.screenWidth * 0.9f) * (deltaTime * (100f / 35f)) / 100f;
+        //timer_bar.width = (IronCurtain.screenWidth * 0.9f) * (timeLimit * (100f / 35f)) / 100f;
 
-        runner.setHealth(runner.getMaxHealth() * ((deltaTime * (100f / 45f)) / 100f));
-        //System.out.println(deltaTime);
+        runner.setHealth(runner.getMaxHealth() * ((timeLimit * (100f / 85f)) / 100f));
+        //System.out.println(timeLimit);
 
         for (int i = 0; i < tower_count; i++) {
             timers.set(i, timers.get(i) + delta);
@@ -308,13 +344,13 @@ public class GameScreen implements Screen, InputProcessor {
                 IronCurtain.screenHeight / 5.7f);
         //System.out.println(runner.getWidth());
 
-        if (move_dog && attack_delay > 225) {
+        if (move_dog && attack_delay > 250) {
             if (dog == null) {
                 dog = new Dogs(world, camera);
                 System.out.println(dog.getPosition());
             }
 
-            dog.getBody().setLinearVelocity(-8f, 0f);
+            dog.getBody().setLinearVelocity(-6f, 0f);
             dog.moveLeft();
 
             //dog.getBody().setLinearVelocity(-5f, 0f);
@@ -360,9 +396,9 @@ public class GameScreen implements Screen, InputProcessor {
                 missile_launch.play(volume * 0.5f);
             }
             else if (attack_delay > 100) {
-                if (missile_timer < 75) {
-                    missile.getBody().setLinearVelocity((runner.getBody().getPosition().x - missile.getBody().getPosition().x) * 1.75f,
-                            (runner.getBody().getPosition().y - missile.getBody().getPosition().y));
+                if (missile_timer < 50) {
+                    missile.getBody().setLinearVelocity((runner.getBody().getPosition().x - missile.getBody().getPosition().x) * 1.25f,
+                            ((IronCurtain.screenHeight * -0.4f) / 200f - missile.getBody().getPosition().y));
                 }
                 /*else if (missile_timer < 100) {
                     if (!missile_vel_saved) {
@@ -378,7 +414,7 @@ public class GameScreen implements Screen, InputProcessor {
                         missile_vel_y = missile.getBody().getLinearVelocity().y;
                         missile_vel_saved = true;
                     }
-                    missile_vel_y -= 0.025f;
+                    //missile_vel_y -= 0.02f;
                     missile.getBody().setLinearVelocity(missile.getBody().getLinearVelocity().x, missile_vel_y);
                     //runner.getBody().getPosition().x - missile.getBody().getPosition().x) * 1.5f
                 }
@@ -392,11 +428,15 @@ public class GameScreen implements Screen, InputProcessor {
             }
         }
 
-        if (move_dog || shoot_missile) {
-            attack_delay++;
+        if (startDelay > 0f) {
+            font256.draw(batch, startDelayLayout, fontX, fontY);
         }
 
         batch.end();
+
+        if (move_dog || shoot_missile) {
+            attack_delay++;
+        }
 
         Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
@@ -414,7 +454,7 @@ public class GameScreen implements Screen, InputProcessor {
         shapeRenderer.setColor(255 / 255.0f, 0 / 255.0f, 0 / 255.0f, 1);
         shapeRenderer.rect(health_bar.x, health_bar.y, health_bar.width, health_bar.height);
 
-        //timer_bar.width = (IronCurtain.screenWidth * 0.9f) * (deltaTime * (100f / 35f)) / 100f;
+        //timer_bar.width = (IronCurtain.screenWidth * 0.9f) * (timeLimit * (100f / 35f)) / 100f;
 
         //shapeRenderer.setColor(0 / 255.0f, 0 / 255.0f, 0 / 255.0f, 1);
         //shapeRenderer.rect(timer_bar.x, timer_bar.y, timer_bar.width, timer_bar.height);
@@ -434,17 +474,8 @@ public class GameScreen implements Screen, InputProcessor {
         stage.act(delta);
         stage.draw();
 
-        if (runner.getHealth() <= 0 || deltaTime <= 0 || runner.getPosition().x >= map.getLength() - IronCurtain.screenWidth / 2) {
-            stage.getRoot().getColor().a = 1;
-            SequenceAction sequenceAction = new SequenceAction();
-            sequenceAction.addAction(fadeOut(3f));
-            sequenceAction.addAction(run(new Runnable() {
-                @Override
-                public void run() {
-                    game.changeScreen(IronCurtain.ENDGAME, runner.getHealth());
-                }
-            }));
-            stage.getRoot().addAction(sequenceAction);
+        if (runner.getHealth() <= 0 || timeLimit <= 0 || runner.getPosition().x >= map.getSprite().getX() + map.getLength()) {
+            game.changeScreen(IronCurtain.ENDGAME, runner.getHealth());
         }
 	}
 
@@ -462,7 +493,10 @@ public class GameScreen implements Screen, InputProcessor {
             runner.keyUpRight();
         }
         is_jumping = false;
-        is_frozen = false;
+
+        if (startDelay <= 0) {
+            is_frozen = false;
+        }
     }
 
     public void drawTowerSpotlights() {
@@ -511,7 +545,7 @@ public class GameScreen implements Screen, InputProcessor {
                     if (runner_check1 && runner_check2) {
                         //runner.setHealth(runner.getHealth() - 0.1f);
 
-                        if (!move_dog && !shoot_missile) {
+                        if (!move_dog || !shoot_missile) {
                             if (!screenShaker.get_status()) {
                                 screenShaker.shake(5, camera.position);
                             }
@@ -622,6 +656,13 @@ public class GameScreen implements Screen, InputProcessor {
         }
         return true;
     }
+
+    void setStartDelayText(String str) {
+        str_startDelay = str;
+        startDelayLayout = new GlyphLayout(font256, str_startDelay);
+        fontX = camera.position.x - startDelayLayout.width / 2;
+        fontY = camera.position.y + startDelayLayout.height / 2;
+	}
 
     @Override
     public boolean keyUp(int keycode) {
