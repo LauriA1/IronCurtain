@@ -13,7 +13,7 @@ public class Map {
     private Sprite[] sprites;
     private Body body;
 
-    private int mapLength = 10;
+    private int mapLength = 15;
 
     public Map(World world) {
         sprites = new Sprite[6];
@@ -26,13 +26,8 @@ public class Map {
             textureRegion.setRegion(0, 0, texture.getWidth()*mapLength, texture.getHeight());
 
             sprites[i] = new Sprite(textureRegion);
-            System.out.println("NÄYTÖN SUHDE: " + (IronCurtain.screenWidth/IronCurtain.screenHeight));
-            System.out.println("NÄYTÖN LEVEYS: " + IronCurtain.screenWidth);
-            System.out.println("NÄYTÖN KORKEUS: " + IronCurtain.screenHeight);
-            System.out.println("ENNEN     WIDTH: " + sprites[i].getWidth() + "HEIGHT: " + sprites[i].getHeight());
-            sprites[i].setSize(IronCurtain.screenWidth/IronCurtain.screenHeight * sprites[i].getWidth() * 0.5f,
-                    IronCurtain.screenWidth/IronCurtain.screenHeight * sprites[i].getHeight() * 0.5f);
-            System.out.println("JÄLKEEN     WIDTH: " + sprites[i].getWidth() + "HEIGHT: " + sprites[i].getHeight());
+            sprites[i].setSize(IronCurtain.screenWidth /IronCurtain.screenHeight * sprites[i].getWidth() * 0.5f,
+                    IronCurtain.screenWidth /IronCurtain.screenHeight * sprites[i].getHeight() * 0.5f);
             sprites[i].setOrigin(0, 0);
 
             float y;

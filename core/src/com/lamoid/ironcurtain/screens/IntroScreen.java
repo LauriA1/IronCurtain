@@ -2,6 +2,7 @@ package com.lamoid.ironcurtain.screens;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -22,7 +23,6 @@ public class IntroScreen implements Screen {
 
     @Override
     public void show() {
-        stage = new Stage();
         Gdx.input.setInputProcessor(stage);
 
         Texture logo_texture = new Texture ("logo.png");
@@ -47,7 +47,7 @@ public class IntroScreen implements Screen {
     private Runnable onSplashFinishedRunnable = new Runnable() {
         @Override
         public void run() {
-            game.changeScreen(IronCurtain.MAINMENU);
+            game.changeScreen(IronCurtain.MAINMENU, 0);
         }
     };
 
@@ -62,17 +62,14 @@ public class IntroScreen implements Screen {
 
     @Override
     public void resize(int width, int height) {
-
     }
 
     @Override
     public void pause() {
-
     }
 
     @Override
     public void resume() {
-
     }
 
     @Override

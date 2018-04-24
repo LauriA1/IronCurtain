@@ -2,11 +2,18 @@ package com.lamoid.ironcurtain.screens;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import com.badlogic.gdx.*;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
@@ -14,12 +21,19 @@ import com.badlogic.gdx.physics.box2d.*;
 
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Dialog;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
+import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
 import com.lamoid.ironcurtain.IronCurtain;
 import com.lamoid.ironcurtain.sprites.*;
 import com.lamoid.ironcurtain.utils.ScreenShaker;
+
+import static com.badlogic.gdx.scenes.scene2d.actions.Actions.fadeOut;
+import static com.badlogic.gdx.scenes.scene2d.actions.Actions.run;
 
 public class GameScreen implements Screen, InputProcessor {
   	private final IronCurtain game;
@@ -28,38 +42,68 @@ public class GameScreen implements Screen, InputProcessor {
     private SpriteBatch batch;
     private World world;
     private OrthographicCamera camera;
-    private Rectangle moving_key, jump_key, health_bar;
+    private Image move_key, jump_key;
+    private Rectangle health_bar;
     private ShapeRenderer shapeRenderer;
+
+    private Sound lights;
+    private Sound barking;
+    private Sound mine_explosion;
+    private Sound missile_launch;
+
+    private Body explodedMine;
+
+    private FreeTypeFontGenerator generator;
+    private FreeTypeFontGenerator.FreeTypeFontParameter parameter;
+    private BitmapFont font256;
+    private GlyphLayout startDelayLayout;
+    private Random rand;
 
     private Runner runner;
     private Dogs dog;
+    private Missiles missile;
     private ScreenShaker screenShaker;
     private Map map;
 
     private List<Mines> mines;
     private List<Towers> towers;
+    private List<Explosions> explosions;
 
     private boolean moving_left = false;
     private boolean moving_right = false;
     private boolean is_jumping = true;
-    private boolean is_frozen = false;
+    private boolean is_frozen = true;
     private boolean facing_left = false;
-    private boolean time_to_shoot = false;
-    boolean move_dog = false;
-    boolean dog_attacked = false;
+    private boolean move_dog = false;
+    private boolean dog_attacked = false;
+    private boolean shoot_missile = false;
+    private boolean missile_direction = false;
 
-    private float shoot_timer = 0;
-    private int tower_index = 0;
+    private float missile_timer = 0;
+    private float attack_delay = 0;
+
+    private float missile_vel_y = 0;
+    private boolean missile_vel_saved = false;
 
     private float old_cameraX = 0;
 
-    private int mine_count = 8;
-    private int tower_count = 5;
+    private int mine_count = 15;
+    private int tower_count = 8;
+
+    private int missile_delay = 0;
+    private int dog_delay = 0;
+
+    private int explosion_to_remove = -1;
+
+    private float timeLimit = 60f;
+    private float startDelay = 4.5f;
+
+    private float volume = 0;
+
+    private String str_startDelay;
+    private float fontX, fontY;
 
     private List<Float> timers;
-
-    private float tower_distance = 512;
-    private float mine_distance = 512;
 
 	public GameScreen(final IronCurtain gam) {
 		this.game = gam;
@@ -73,13 +117,22 @@ public class GameScreen implements Screen, InputProcessor {
         runner = new Runner(world, 0.32f, 0);
         timers = new ArrayList<Float>();
         towers = new ArrayList<Towers>();
-        dog = new Dogs(world, camera);
+        explosions = new ArrayList<Explosions>();
+        lights = Gdx.audio.newSound(Gdx.files.internal("lights.mp3"));
+        barking = Gdx.audio.newSound(Gdx.files.internal("dog.mp3"));
+        mine_explosion = Gdx.audio.newSound(Gdx.files.internal("mine.mp3"));
+        missile_launch = Gdx.audio.newSound(Gdx.files.internal("missile_launch.mp3"));
+        //missile_impact = Gdx.audio.newSound(Gdx.files.internal("missile_impact.mp3"));
+
+        if (game.getPreferences().isSoundsEnabled()) {
+            volume = game.getPreferences().getSoundVolume();
+        }
 
         float x1 = map.getSprite().getX() + IronCurtain.screenWidth;
-        float x2 = map.getSprite().getX() + map.getSprite().getWidth() - IronCurtain.screenWidth;
+        float x2 = map.getLength() - IronCurtain.screenWidth;
         float y = (IronCurtain.screenHeight / 2) * -1;
 
-        for (int i = 0; i < tower_count; i++) {
+        for (int i = 1; i < tower_count + 1; i++) {
             towers.add(new Towers((x2 - x1) / tower_count * i,
                     (x2 - x1) / tower_count * (i + 1), y));
             timers.add(new Float(0));
@@ -87,30 +140,40 @@ public class GameScreen implements Screen, InputProcessor {
 
         mines = new ArrayList<Mines>();
 
-        for (int i = 0; i < mine_count; i++) {
-            mines.add(new Mines(world, (x2 - x1) / tower_count * i,
-                    (x2 - x1) / tower_count * (i + 1), y));
+        for (int i = 1; i < mine_count + 1; i++) {
+            mines.add(new Mines(world, (x2 - x1) / mine_count * i,
+                    (x2 - x1) / mine_count * (i + 1), y));
         }
 
-        moving_key = new Rectangle();
-        moving_key.x = IronCurtain.screenWidth * 0.05f;
-        moving_key.y = moving_key.x;
-        moving_key.width = moving_key.x * 4;
-        moving_key.height = moving_key.width/2;
+        Texture move_texture = new Texture("move_button.png");
+        Drawable move_drawable = new TextureRegionDrawable(new TextureRegion(move_texture));
+        move_key = new Image(move_drawable);
+        move_key.setX(IronCurtain.screenWidth * 0.05f);
+        move_key.setY(move_key.getX());
+        move_key.setSize(move_key.getX() * 4, move_key.getX() * 1.5f);
+        stage.addActor(move_key);
 
-        jump_key = new Rectangle();
-        jump_key.x = IronCurtain.screenWidth - (IronCurtain.screenWidth * 0.15f);
-        jump_key.y = moving_key.y;
-        jump_key.width = moving_key.width/2;
-        jump_key.height = moving_key.height;
+        Texture jump_texture = new Texture("jump_button.png");
+        Drawable jump_drawable = new TextureRegionDrawable(new TextureRegion(jump_texture));
+        jump_key = new Image(jump_drawable);
+        jump_key.setX(IronCurtain.screenWidth - (IronCurtain.screenWidth * 0.15f));
+        jump_key.setY(move_key.getY());
+        jump_key.setSize(move_key.getWidth() / 2, move_key.getWidth() / 2);
+        stage.addActor(jump_key);
 
         health_bar = new Rectangle();
-        health_bar.x = moving_key.x;
+        health_bar.x = move_key.getX();
         health_bar.y = IronCurtain.screenHeight * 0.95f;
         health_bar.width = (IronCurtain.screenWidth * 0.9f) * (runner.getHealth() / 10f);
-        health_bar.height = moving_key.height / 10;
+        health_bar.height = move_key.getHeight() / 10;
 
         shapeRenderer = new ShapeRenderer();
+
+        generator = new FreeTypeFontGenerator(Gdx.files.internal("BebasNeue.ttf"));
+        parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        parameter.size = 256;
+        font256 = generator.generateFont(parameter);
+        generator.dispose();
 
         Gdx.input.setCatchBackKey(true);
         Gdx.input.setInputProcessor(new InputMultiplexer(stage, this));
@@ -123,8 +186,6 @@ public class GameScreen implements Screen, InputProcessor {
             public void beginContact(Contact contact) {
                 Fixture fixtureA = contact.getFixtureA();
                 Fixture fixtureB = contact.getFixtureB();
-                System.out.println("beginContact" + "between " + fixtureA.toString() + " and " + fixtureB.toString());
-                System.out.println(fixtureA.getBody().getUserData() + ", " + fixtureB.getBody().getUserData());
                 if(fixtureA.getBody().getUserData().toString().contains("Map") &&
                         fixtureB.getBody().getUserData().toString().contains("Runner")) {
                     readyToJump();
@@ -143,7 +204,9 @@ public class GameScreen implements Screen, InputProcessor {
                         runner.getBody().setLinearVelocity(-7.5f, 10f);
                     }*/
 
-                    runner.setHealth(runner.getHealth() - 1f);
+                    if (!dog_attacked) {
+                        runner.decreaseHealth(1f);
+                    }
 
                     dog_attacked = true;
 
@@ -163,10 +226,31 @@ public class GameScreen implements Screen, InputProcessor {
                         runner.getBody().setLinearVelocity(-7.5f, 10f);
                     }
 
-                    runner.setHealth(runner.getHealth() - 1f);
+                    explodedMine = fixtureB.getBody();
+
+                    mine_explosion.play(volume);
+                    runner.decreaseHealth(1f);
 
                     is_jumping = true;
                     is_frozen = true;
+                }
+
+                if(fixtureA.getBody().getUserData().toString().contains("Missile") ||
+                        fixtureB.getBody().getUserData().toString().contains("Missile")) {
+                    System.out.println("beginContact" + "between " + fixtureA.toString() + " and " + fixtureB.toString());
+                    System.out.println(fixtureA.getBody().getUserData() + ", " + fixtureB.getBody().getUserData());
+                    if(fixtureA.getBody().getUserData().toString().contains("Runner") ||
+                            fixtureB.getBody().getUserData().toString().contains("Runner")) {
+                        if (!screenShaker.get_status()) {
+                            screenShaker.shake(5, camera.position);
+                        }
+
+                        runner.decreaseHealth(1f);
+                    }
+
+                    missile.getBody().setLinearVelocity(0f, 0f);
+                    //destroy body
+                    shoot_missile = false;
                 }
             }
 
@@ -186,7 +270,6 @@ public class GameScreen implements Screen, InputProcessor {
             }
 
         });
-
 	}
 
 	@Override
@@ -198,11 +281,29 @@ public class GameScreen implements Screen, InputProcessor {
 
         //camera.position.set(sprite.getX() + sprite.getWidth() / 2, 0, 0);
 
+        if (startDelay > 0f) {
+            startDelay -= Gdx.graphics.getDeltaTime();
+        }
+        if (startDelay > 3f) {
+            setStartDelayText("3");
+        }
+        else if (startDelay > 2f) {
+            setStartDelayText("2");
+        }
+        else if (startDelay > 1f) {
+            setStartDelayText("1");
+        }
+        else {
+            if (startDelay > 0f) {
+                setStartDelayText("GO");
+                is_frozen = false;
+            }
+            timeLimit -= Gdx.graphics.getDeltaTime();
+        }
+
         handleInput();
 
-        if (runner.getHealth() <= 0) {
-            game.changeScreen(IronCurtain.THEGAME);
-        }
+        runner.setHealth(runner.getMaxHealth() * ((timeLimit * (100f / 60f)) / 100f));
 
         for (int i = 0; i < tower_count; i++) {
             timers.set(i, timers.get(i) + delta);
@@ -216,22 +317,32 @@ public class GameScreen implements Screen, InputProcessor {
 
         map.animateBackground(camera, old_cameraX);
 
-        screenShaker.update();
+        if(game.getPreferences().isScreenShakerEnabled()) {
+            screenShaker.update();
+        }
         batch.setProjectionMatrix(camera.combined);
         camera.update();
 
         // Step the physics simulation forward at a rate of 60hz
         world.step(1f/60f, 6, 2);
 
-        /*sprite.setPosition((body.getPosition().x * PIXELS_TO_METERS) - sprite.getWidth()/2,
-                (body.getPosition().y * PIXELS_TO_METERS) -sprite.getHeight()/2 );*/
+        if (dog != null && !move_dog) {
+            world.destroyBody(dog.getBody());
+            dog = null;
+        }
+
+        if (missile != null && !shoot_missile) {
+            mine_explosion.play(volume);
+            explosions.add(new Explosions(missile.getPosition()));
+            world.destroyBody(missile.getBody());
+            missile = null;
+        }
 
         Gdx.gl.glClearColor(1, 1, 1, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         batch.begin();
 
-        //sprite2.draw(batch);
         map.drawMap(batch);
 
         for (Towers tower : towers) {
@@ -239,25 +350,101 @@ public class GameScreen implements Screen, InputProcessor {
         }
 
         runner.update(delta);
-        batch.draw(runner.getRunner(is_jumping), runner.getPosition().x, runner.getPosition().y, runner.getWidth(), runner.getHeight());
+        batch.draw(runner.getRunner(is_jumping), runner.getPosition().x, runner.getPosition().y,
+                runner.getWidth() / runner.getHeight() * (IronCurtain.screenHeight / 5.7f),
+                IronCurtain.screenHeight / 5.7f);
         //System.out.println(runner.getWidth());
 
-        if (move_dog) {
-            dog.getBody().setLinearVelocity(10f, 0f);
+        if (move_dog && attack_delay > dog_delay) {
+            if (dog == null) {
+                dog = new Dogs(world, camera);
+                System.out.println(dog.getPosition());
+            }
 
-            if (dog.getBody().getPosition().x > camera.position.x / 100f + (IronCurtain.screenWidth * 1.1f) / 200f || dog_attacked) {
+            dog.getBody().setLinearVelocity(-6f, 0f);
+            dog.moveLeft();
+
+            //dog.getBody().setLinearVelocity(-5f, 0f);
+
+
+            if (dog.getBody().getPosition().x < camera.position.x / 100f - (IronCurtain.screenWidth * 1.1f) / 200f
+                    || dog_attacked) {
                 move_dog = false;
                 dog_attacked = false;
                 dog.getBody().setLinearVelocity(0f, 0f);
-                dog.resetPos(camera);
+                //barking.stop();
+                //dog.set_sound_played(false);
+                //destroy body
+            }
+
+            if (dog.getBody().getPosition().x > camera.position.x / 100f + IronCurtain.screenWidth / 200f
+                    && !dog.get_sound_played()) {
+                barking.play(volume);
+                dog.set_sound_played(true);
+            }
+
+            dog.update(delta);
+            batch.draw(dog.getDog(), dog.getPosition().x, dog.getPosition().y,
+                    dog.getWidth(), dog.getHeight());
+        }
+
+        for (Mines mine : mines) {
+            if (explodedMine != null && explodedMine == mine.getBody()) {
+                explosions.add(new Explosions(mine.getPosition()));
+                world.destroyBody(explodedMine);
+                mine.setMineExploded();
+                explodedMine = null;
+            }
+
+            if (!mine.getMineExploded()) {
+                mine.update(delta);
+                batch.draw(mine.getMine(), mine.getPosition().x, mine.getPosition().y, mine.getWidth(), mine.getHeight());
             }
         }
 
-        dog.updatePos();
-        dog.drawDog(batch);
+        drawExplosion(delta);
 
-        for (Mines mine : mines) {
-            mine.drawMine(batch);
+        if (shoot_missile) {
+            if (attack_delay > missile_delay && missile == null) {
+                missile = new Missiles(world);
+                missile.setPos(camera);
+                missile_launch.play(volume * 0.5f);
+            }
+            else if (attack_delay > 100 && missile != null) {
+                if (missile_timer < 50) {
+                    missile.getBody().setLinearVelocity((runner.getBody().getPosition().x - missile.getBody().getPosition().x) * 1.25f,
+                            ((IronCurtain.screenHeight * -0.4f) / 200f - missile.getBody().getPosition().y));
+                }
+                /*else if (missile_timer < 100) {
+                    if (!missile_vel_saved) {
+                        missile_vel_y = missile.getBody().getLinearVelocity().y;
+                        missile_vel_saved = true;
+                    }
+                    missile_vel_y += 0.025f;
+                    missile.getBody().setLinearVelocity(missile.getBody().getLinearVelocity().x, missile_vel_y);
+
+                }*/
+                else {
+                    if (!missile_vel_saved) {
+                        missile_vel_y = missile.getBody().getLinearVelocity().y;
+                        missile_vel_saved = true;
+                    }
+                    //missile_vel_y -= 0.02f;
+                    missile.getBody().setLinearVelocity(missile.getBody().getLinearVelocity().x, missile_vel_y);
+                    //runner.getBody().getPosition().x - missile.getBody().getPosition().x) * 1.5f
+                }
+
+                missile.getBody().setTransform(missile.getBody().getWorldCenter(), missile.getBody().getLinearVelocity().angle());
+
+                missile.updatePos();
+                missile.drawMissile(batch);
+
+                missile_timer++;
+            }
+        }
+
+        if (startDelay > 0f) {
+            font256.draw(batch, startDelayLayout, fontX, fontY);
         }
 
         batch.end();
@@ -269,10 +456,6 @@ public class GameScreen implements Screen, InputProcessor {
 
         drawTowerSpotlights();
 
-        shapeRenderer.setColor(80 / 255.0f, 80 / 255.0f, 50 / 255.0f, 0.5f);
-        shapeRenderer.rect(moving_key.x, moving_key.y, moving_key.width, moving_key.height);
-        shapeRenderer.rect(jump_key.x, jump_key.y, jump_key.width, jump_key.height);
-
         health_bar.width = (IronCurtain.screenWidth * 0.9f) * (runner.getHealth() / 10f);
 
         shapeRenderer.setColor(255 / 255.0f, 0 / 255.0f, 0 / 255.0f, 1);
@@ -281,17 +464,30 @@ public class GameScreen implements Screen, InputProcessor {
         shapeRenderer.end();
         Gdx.gl.glDisable(GL20.GL_BLEND);
 
+        if (moving_left && !is_frozen) {
+            runner.getBody().setLinearVelocity(-7.5f, runner.getBody().getLinearVelocity().y);
+            runner.moveLeft();
+        }
+        else if (moving_right && !is_frozen) {
+            runner.getBody().setLinearVelocity(7.5f, runner.getBody().getLinearVelocity().y);
+            runner.moveRight();
+        }
+
         stage.act(delta);
         stage.draw();
+
+        if (runner.getHealth() <= 0 || timeLimit <= 0 || runner.getPosition().x >= map.getSprite().getX() + map.getLength()) {
+            game.changeScreen(IronCurtain.ENDGAME, runner.getHealth());
+        }
 	}
 
     public void readyToJump() {
-        if (!moving_left && !moving_right || is_frozen) {
+        /*if (!moving_left && !moving_right || is_frozen) {
             runner.getBody().setLinearVelocity(0f, 0f);
         }
         else {
             runner.getBody().setLinearVelocity(runner.getBody().getLinearVelocity().x, 0f);
-        }
+        }*/
         if (facing_left) {
             runner.keyUpLeft();
         }
@@ -299,7 +495,10 @@ public class GameScreen implements Screen, InputProcessor {
             runner.keyUpRight();
         }
         is_jumping = false;
-        is_frozen = false;
+
+        if (startDelay <= 0) {
+            is_frozen = false;
+        }
     }
 
     public void drawTowerSpotlights() {
@@ -309,43 +508,79 @@ public class GameScreen implements Screen, InputProcessor {
                 List<Float> coordinates;
                 coordinates = tower.getCoordinates();
 
-                boolean check1 = false;
-                boolean check2 = false;
+                boolean runner_check1 = false;
+                boolean runner_check2 = false;
+                boolean camera_check1 = false;
+                boolean camera_check2 = false;
 
-                //System.out.print("runner.x: " + (runner.getPosition().x - runner.getWidth()/2 + Gdx.graphics.getWidth()/2));
+                //System.out.print("runner.x: " + runner.getPosition().x + Gdx.graphics.getWidth() / 2);
 
                 for (Float coordinate : coordinates) {
                     if (coordinates.indexOf(coordinate) == 0) {
                         //System.out.print(" | tower" + towers.indexOf(tower) + ": " + (coordinate + camera.position.x));
                         if (runner.getPosition().x + IronCurtain.screenWidth/2
                                 <= coordinate + camera.position.x) {
-                            check1 = true;
+                            runner_check1 = true;
+                        }
+                        if (camera.position.x <= coordinate + camera.position.x
+                                && timers.get(towers.indexOf(tower)) <= 0.1f) {
+                            camera_check1 = true;
+                            //System.out.println("check1 = " + camera_check1);
                         }
                     }
 
                     if (coordinates.indexOf(coordinate) == 1) {
                         //System.out.println(", " + (coordinate + camera.position.x));
-                        if (runner.getPosition().x + runner.getWidth()/2 + IronCurtain.screenWidth/2
+                        if (runner.getPosition().x + runner.getWidth() + IronCurtain.screenWidth/2
                                 >= coordinate + camera.position.x) {
-                            check2 = true;
+                            runner_check2 = true;
+                        }
+                        //System.out.println("camera.position.x: " + (camera.position.x + IronCurtain.screenWidth/2)
+                        // + "| coordinate: " + (coordinate));
+                        if (camera.position.x + IronCurtain.screenWidth >= coordinate + camera.position.x
+                                && timers.get(towers.indexOf(tower)) <= 0.1f) {
+                            camera_check2 = true;
+                            //System.out.println("check2 = " + camera_check2);
                         }
                     }
 
-                    if (check1 && check2) {
-                        screenShaker.shake(5, camera.position);
+                    if (runner_check1 && runner_check2) {
                         //runner.setHealth(runner.getHealth() - 0.1f);
 
+                        if (!move_dog || !shoot_missile) {
+                            if (!screenShaker.get_status()) {
+                                screenShaker.shake(5, camera.position);
+                            }
+                            rand = new Random();
+                            attack_delay = 0;
+                        }
+
                         if (!move_dog) {
-                            dog.resetPos(camera);
+                            //dog.resetPos(camera);
                             move_dog = true;
+                            dog_delay = rand.nextInt((200 - 50) + 1) + 50;
+                        }
+
+                        if (!shoot_missile) {
+                            missile_vel_saved = false;
+                            missile_timer = 0;
+                            missile_direction = facing_left;
+                            shoot_missile = true;
+                            missile_delay = rand.nextInt((200 - 50) + 1) + 50;
                         }
 
                         //time_to_shoot = true;
+                    }
+
+                    if (camera_check1 && camera_check2 && !tower.get_sound_played()) {
+                        lights.play(volume * 0.5f);
+                        tower.set_sound_played(true);
                     }
                 }
             }
             else if (timers.get(towers.indexOf(tower)) >= tower.getT() * 2) {
                 timers.set(towers.indexOf(tower), 0f);
+                tower.set_sound_played(false);
             }
 
             /*if (time_to_shoot) {
@@ -363,15 +598,30 @@ public class GameScreen implements Screen, InputProcessor {
         }
     }
 
+    public void drawExplosion(float dt) {
+        for (Explosions explosion : explosions) {
+            if (!explosion.getAnimationFinished()) {
+                explosion.update(dt);
+                //System.out.println(explosion.getPosition());
+                batch.draw(explosion.getExplosion(), explosion.getPosition().x - explosion.getWidth() / 2, explosion.getPosition().y,
+                        explosion.getWidth(), explosion.getHeight());
+            }
+            else {
+                explosion_to_remove = explosions.indexOf(explosion);
+            }
+        }
+        if (explosion_to_remove != -1) {
+            explosions.remove(explosion_to_remove);
+            explosion_to_remove = -1;
+        }
+    }
+
 	@Override
 	public void resize(int width, int height) {
-	}
+    }
 
 	@Override
 	public void show() {
-		// start the playback of the background music
-		// when the screen is shown
-		//rainMusic.play();
 	}
 
 	@Override
@@ -401,25 +651,31 @@ public class GameScreen implements Screen, InputProcessor {
             //final Dialog endDialog =
             new Dialog("Confirm exit", game.skin) {
                 {
-                    final Label textLabel = new Label("Are you sure?",
+                    getTitleLabel().setAlignment(Align.center);
+                    final Label textLabel = new Label("Do you really want to exit?",
                             game.skin, "black");
                     text(textLabel);
 
                     //text("rly exit");
 
-                    /*final TextButton yes_button = new TextButton("Yes", game.skin);
-                    final TextButton no_button = new TextButton("No", game.skin);
+                    /*final TextButton yes_button = new TextButton("Yes", game.skin, "small");
+                    final TextButton new_button = new TextButton("New game", game.skin,"small");
+                    final TextButton no_button = new TextButton("No", game.skin,"small");
                     button(yes_button, "Yes");
+                    button(new_button, "New game");
                     button(no_button, "No");*/
 
                     button("Yes", "Yes");
+                    button("New game", "New game");
                     button("No", "No");
                 }
                 @Override
                 protected void result(final Object object)
                 {
                     if(object.toString().equals("Yes"))
-                        game.changeScreen(IronCurtain.MAINMENU);
+                        game.changeScreen(IronCurtain.MAINMENU, 0);
+                    else if(object.toString().equals("New game"))
+                        game.changeScreen(IronCurtain.THEGAME, 0);
                 }
             }.show(stage);
         }
@@ -436,26 +692,33 @@ public class GameScreen implements Screen, InputProcessor {
         return false;
     }
 
+    private void setStartDelayText(String str) {
+        str_startDelay = str;
+        startDelayLayout = new GlyphLayout(font256, str_startDelay);
+        fontX = camera.position.x - startDelayLayout.width / 2;
+        fontY = camera.position.y + startDelayLayout.height / 2;
+    }
+
     private void handleInput() {
         float touchX = Gdx.input.getX();
         float touchY = Gdx.input.getY();
 
         if(Gdx.input.isTouched()
-                && touchX >= moving_key.x && touchX <= moving_key.x + moving_key.width
-                && IronCurtain.screenHeight - touchY >= moving_key.y
-                && IronCurtain.screenHeight - touchY <= moving_key.y + moving_key.height) {
+                && touchX >= move_key.getX() && touchX <= move_key.getX() + move_key.getWidth()
+                && IronCurtain.screenHeight - touchY >= move_key.getY()
+                && IronCurtain.screenHeight - touchY <= move_key.getY() + move_key.getHeight()) {
             if (!is_frozen) {
-                if (touchX >= moving_key.x && touchX <= (moving_key.x + moving_key.width/2)) //left
+                if (touchX >= move_key.getX() && touchX <= (move_key.getX() + move_key.getWidth()/2)) //left
                 {
-                    runner.getBody().setLinearVelocity(-7.5f, runner.getBody().getLinearVelocity().y);
+                    runner.getBody().setLinearVelocity(-10f, runner.getBody().getLinearVelocity().y);
                     runner.moveLeft();
                     facing_left = true;
                     moving_left = true;
                     moving_right = false;
                 }
-                else if (touchX >= moving_key.x + moving_key.width/2 && touchX <= moving_key.x + moving_key.width) //right
+                else if (touchX >= move_key.getX() + move_key.getWidth()/2 && touchX <= move_key.getX() + move_key.getWidth()) //right
                 {
-                    runner.getBody().setLinearVelocity(7.5f, runner.getBody().getLinearVelocity().y);
+                    runner.getBody().setLinearVelocity(10f, runner.getBody().getLinearVelocity().y);
                     runner.moveRight();
                     facing_left = false;
                     moving_right = true;
@@ -483,12 +746,12 @@ public class GameScreen implements Screen, InputProcessor {
     @Override
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
         //System.out.println("touchDown registered!");
-        if (screenX >= jump_key.x && screenX <= (jump_key.x + jump_key.width) //jump
-                && (IronCurtain.screenHeight - screenY) >= jump_key.y && (IronCurtain.screenHeight - screenY) <= (jump_key.y + jump_key.height)
+        if (screenX >= jump_key.getX() && screenX <= (jump_key.getX() + jump_key.getWidth()) //jump
+                && (IronCurtain.screenHeight - screenY) >= jump_key.getY()
+                && (IronCurtain.screenHeight - screenY) <= (jump_key.getY() + jump_key.getHeight())
                 && !is_jumping) {
-            runner.getBody().setLinearVelocity(runner.getBody().getLinearVelocity().x, 15f);
+            runner.getBody().setLinearVelocity(runner.getBody().getLinearVelocity().x, 12.5f);
             is_jumping = true;
-            runner.jump();
         }
         return true;
     }

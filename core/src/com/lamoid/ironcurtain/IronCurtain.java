@@ -2,6 +2,7 @@ package com.lamoid.ironcurtain;
 
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
@@ -20,6 +21,8 @@ public class IronCurtain extends Game {
 	private EndScreen endScreen;
 	private Settings settings;
 
+    public Music mainMenuBackgroundMusic;
+
 	public final static int MAINMENU = 0;
 	public final static int SETTINGS = 1;
 	public final static int THEGAME = 2;
@@ -32,15 +35,19 @@ public class IronCurtain extends Game {
     public static float screenWidth;
     public static float screenHeight;
 
-	public void create() {
-	    screenWidth = (float)Gdx.graphics.getWidth();
+    public void create() {
+        screenWidth = (float)Gdx.graphics.getWidth();
         screenHeight = (float)Gdx.graphics.getHeight();
 		// Use LibGDX's default Arial font.
 		font = new BitmapFont();
-        skin = new Skin(Gdx.files.internal("skin/glassy-ui.json"));
+        skin = new Skin(Gdx.files.internal("skin/ironcurtain-ui.json"));
 
         introScreen = new IntroScreen(this);
         settings = new Settings();
+
+        mainMenuBackgroundMusic = Gdx.audio.newMusic(Gdx.files.internal("menu.mp3"));
+        mainMenuBackgroundMusic.setLooping(true);
+        mainMenuBackgroundMusic.setVolume(this.getPreferences().getMusicVolume());
 
         if(this.getPreferences().getLanguage().equals("Suomi")) {
             locale = new Locale("fi");
@@ -53,9 +60,12 @@ public class IronCurtain extends Game {
         setScreen(introScreen);
 	}
 
-	public void changeScreen(int newScreen){
+    public void changeScreen(int newScreen, float health){
         switch(newScreen){
             case MAINMENU:
+                if(this.getPreferences().isMusicEnabled()){
+                    mainMenuBackgroundMusic.play();
+                }
                 mainMenuScreen = new MainMenuScreen(this);
                 this.setScreen(mainMenuScreen);
                 break;
@@ -64,11 +74,12 @@ public class IronCurtain extends Game {
                 this.setScreen(settingsScreen);
                 break;
             case THEGAME:
+                mainMenuBackgroundMusic.stop();
                 gameScreen = new GameScreen(this);
                 this.setScreen(gameScreen);
                 break;
             case ENDGAME:
-                endScreen = new EndScreen(this);
+                endScreen = new EndScreen(this, health);
                 this.setScreen(endScreen);
                 break;
         }
@@ -77,7 +88,20 @@ public class IronCurtain extends Game {
     public Settings getPreferences() {
         return this.settings;
     }
-
+/*
+    public void setMusicStop() {
+    mainMenuBackgroundMusic.stop();
+    }
+    public void setMusicPlay() {
+        mainMenuBackgroundMusic.play();
+    }
+    public void setMusicVolume() {
+        mainMenuBackgroundMusic.setVolume(this.getPreferences().getMusicVolume());
+    }
+    public float getMusicVolume() {
+        return mainMenuBackgroundMusic.getVolume();
+    }
+*/
 	public void render() {
 		super.render(); // important!
 	}

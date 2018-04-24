@@ -15,8 +15,7 @@ public class Runner {
     private static final int MOVEMENT = 500;
     private Texture runner;
     private Vector3 position;
-    private Vector3 velocity;
-    private Rectangle bounds;
+    //private Rectangle bounds;
     private Sprite runnerSprite;
     private Animation runnerAnimation;
     private Body body;
@@ -26,21 +25,23 @@ public class Runner {
     int index;
     int frameCount = 12;
     boolean is_jumping = true;
+    float max_health;
     float health;
 
     public Runner(World world, float x, float y){
         position = new Vector3(x, y, 0);
-        velocity = new Vector3(0,0,0);
         runner = new Texture("runner.png");
         runnerSprite = new Sprite(runner);
         runnerSprite.setSize(IronCurtain.screenWidth/IronCurtain.screenHeight * runnerSprite.getWidth() * 0.5f,
                 IronCurtain.screenWidth/IronCurtain.screenHeight * runnerSprite.getHeight() * 0.5f);
 
         runnerAnimation = new Animation(new TextureRegion(runner), frameCount, 10.5f);
-        bounds = new Rectangle(x, y, runner.getWidth(), runner.getHeight());
+        moveRight();
+        //bounds = new Rectangle(x, y, runner.getWidth(), runner.getHeight());
         //System.out.println(runner.getHeight() + " : " + runner.getWidth());
 
-        health = 10f;
+        max_health = 10f;
+        health = max_health;
 
         //create body
         BodyDef bodyDef = new BodyDef();
@@ -56,10 +57,10 @@ public class Runner {
         FixtureDef fixtureDef = new FixtureDef();
         fixtureDef.shape = shape;
         fixtureDef.density = 0.1f;
-        fixtureDef.restitution = 0.5f;
+        fixtureDef.restitution = 0f;
         fixtureDef.filter.groupIndex = -1;
 
-                body.createFixture(fixtureDef);
+        body.createFixture(fixtureDef);
         shape.dispose();
     }
 
@@ -90,13 +91,6 @@ public class Runner {
 
         velocity.scl(1/dt);
         bounds.setPosition(position.x, position.y);*/
-    }
-
-    public void jump(){
-        if(position.y < 35)
-            velocity.y = 300;
-
-        //runnerAnimation.setDirection(0.5f,true, false);
     }
 
     public void moveRight(){
@@ -142,6 +136,20 @@ public class Runner {
         return health;
     }
 
+    public void decreaseHealth(float value) {
+        if ((health - value) > 0) {
+            health -= value;
+            max_health -= value;
+        }
+        else {
+            health = 0;
+        }
+    }
+
+    public float getMaxHealth() {
+        return max_health;
+    }
+
     public Body getBody() {
         return body;
     }
@@ -149,6 +157,5 @@ public class Runner {
     public void dispose(){
         runner.dispose();
     }
-
 
 }

@@ -74,11 +74,9 @@ public class ScreenShaker {
             this.camPos.set(center);
             this.radius = distance;
         }
-
     }
 
     public boolean get_status() {
         return shaking;
     }
-
 }
