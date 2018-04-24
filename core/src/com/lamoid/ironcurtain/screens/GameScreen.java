@@ -2,6 +2,7 @@ package com.lamoid.ironcurtain.screens;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.audio.Sound;
@@ -47,6 +48,7 @@ public class GameScreen implements Screen, InputProcessor {
     private FreeTypeFontGenerator.FreeTypeFontParameter parameter;
     private BitmapFont font256;
     private GlyphLayout startDelayLayout;
+    private Random rand;
 
     private Runner runner;
     private Dogs dog;
@@ -56,6 +58,7 @@ public class GameScreen implements Screen, InputProcessor {
 
     private List<Mines> mines;
     private List<Towers> towers;
+    private List<Explosions> explosions;
 
     private boolean moving_left = false;
     private boolean moving_right = false;
@@ -75,10 +78,15 @@ public class GameScreen implements Screen, InputProcessor {
 
     private float old_cameraX = 0;
 
-    private int mine_count = 20;
-    private int tower_count = 10;
+    private int mine_count = 15;
+    private int tower_count = 8;
 
-    private float timeLimit = 85f;
+    private int missile_delay = 0;
+    private int dog_delay = 0;
+
+    private int explosion_to_remove = -1;
+
+    private float timeLimit = 60f;
     private float startDelay = 4.5f;
 
     private float volume = 0;
@@ -100,6 +108,7 @@ public class GameScreen implements Screen, InputProcessor {
         runner = new Runner(world, 0.32f, 0);
         timers = new ArrayList<Float>();
         towers = new ArrayList<Towers>();
+        explosions = new ArrayList<Explosions>();
         lights = Gdx.audio.newSound(Gdx.files.internal("lights.mp3"));
         barking = Gdx.audio.newSound(Gdx.files.internal("dog.mp3"));
         mine_explosion = Gdx.audio.newSound(Gdx.files.internal("mine.mp3"));
@@ -111,7 +120,7 @@ public class GameScreen implements Screen, InputProcessor {
         }
 
         float x1 = map.getSprite().getX() + IronCurtain.screenWidth;
-        float x2 = map.getSprite().getX() + map.getLength() - IronCurtain.screenWidth / 2f;
+        float x2 = map.getLength() - IronCurtain.screenWidth;
         float y = (IronCurtain.screenHeight / 2) * -1;
 
         for (int i = 1; i < tower_count + 1; i++) {
@@ -290,7 +299,7 @@ public class GameScreen implements Screen, InputProcessor {
 
         //timer_bar.width = (IronCurtain.screenWidth * 0.9f) * (timeLimit * (100f / 35f)) / 100f;
 
-        runner.setHealth(runner.getMaxHealth() * ((timeLimit * (100f / 85f)) / 100f));
+        runner.setHealth(runner.getMaxHealth() * ((timeLimit * (100f / 60f)) / 100f));
         //System.out.println(timeLimit);
 
         for (int i = 0; i < tower_count; i++) {
@@ -319,6 +328,7 @@ public class GameScreen implements Screen, InputProcessor {
 
         if (missile != null && !shoot_missile) {
             mine_explosion.play(volume);
+            explosions.add(new Explosions(missile.getPosition()));
             world.destroyBody(missile.getBody());
             missile = null;
         }
@@ -344,7 +354,7 @@ public class GameScreen implements Screen, InputProcessor {
                 IronCurtain.screenHeight / 5.7f);
         //System.out.println(runner.getWidth());
 
-        if (move_dog && attack_delay > 250) {
+        if (move_dog && attack_delay > dog_delay) {
             if (dog == null) {
                 dog = new Dogs(world, camera);
                 System.out.println(dog.getPosition());
@@ -367,7 +377,7 @@ public class GameScreen implements Screen, InputProcessor {
 
             if (dog.getBody().getPosition().x > camera.position.x / 100f + IronCurtain.screenWidth / 200f
                     && !dog.get_sound_played()) {
-                barking.play(volume * 0.75f);
+                barking.play(volume);
                 dog.set_sound_played(true);
             }
 
@@ -378,6 +388,7 @@ public class GameScreen implements Screen, InputProcessor {
 
         for (Mines mine : mines) {
             if (explodedMine != null && explodedMine == mine.getBody()) {
+                explosions.add(new Explosions(mine.getPosition()));
                 world.destroyBody(explodedMine);
                 mine.setMineExploded();
                 explodedMine = null;
@@ -389,13 +400,15 @@ public class GameScreen implements Screen, InputProcessor {
             }
         }
 
+        drawExplosion(delta);
+
         if (shoot_missile) {
-            if (attack_delay > 50 && missile == null) {
+            if (attack_delay > missile_delay && missile == null) {
                 missile = new Missile(world);
                 missile.setPos(camera);
                 missile_launch.play(volume * 0.5f);
             }
-            else if (attack_delay > 100) {
+            else if (attack_delay > 100 && missile != null) {
                 if (missile_timer < 50) {
                     missile.getBody().setLinearVelocity((runner.getBody().getPosition().x - missile.getBody().getPosition().x) * 1.25f,
                             ((IronCurtain.screenHeight * -0.4f) / 200f - missile.getBody().getPosition().y));
@@ -549,13 +562,14 @@ public class GameScreen implements Screen, InputProcessor {
                             if (!screenShaker.get_status()) {
                                 screenShaker.shake(5, camera.position);
                             }
-
+                            rand = new Random();
                             attack_delay = 0;
                         }
 
                         if (!move_dog) {
                             //dog.resetPos(camera);
                             move_dog = true;
+                            dog_delay = rand.nextInt((200 - 50) + 1) + 50;
                         }
 
                         if (!shoot_missile) {
@@ -563,6 +577,7 @@ public class GameScreen implements Screen, InputProcessor {
                             missile_timer = 0;
                             missile_direction = facing_left;
                             shoot_missile = true;
+                            missile_delay = rand.nextInt((200 - 50) + 1) + 50;
                         }
 
                         //time_to_shoot = true;
@@ -591,6 +606,24 @@ public class GameScreen implements Screen, InputProcessor {
                     tower.drawGunfire(shapeRenderer, camera);
                 }
             }*/
+        }
+    }
+
+    public void drawExplosion(float dt) {
+        for (Explosions explosion : explosions) {
+            if (!explosion.getAnimationFinished()) {
+                explosion.update(dt);
+                //System.out.println(explosion.getPosition());
+                batch.draw(explosion.getExplosion(), explosion.getPosition().x - explosion.getWidth() / 2, explosion.getPosition().y,
+                        explosion.getWidth(), explosion.getHeight());
+            }
+            else {
+                explosion_to_remove = explosions.indexOf(explosion);
+            }
+        }
+        if (explosion_to_remove != -1) {
+            explosions.remove(explosion_to_remove);
+            explosion_to_remove = -1;
         }
     }
 

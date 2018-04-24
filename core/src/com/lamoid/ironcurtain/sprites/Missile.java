@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.lamoid.ironcurtain.IronCurtain;
 
@@ -59,8 +60,8 @@ public class Missile {
     }
 
     public void setPos(Camera camera) {
-        Random rand;
-        rand = new Random();
+        //Random rand;
+        //rand = new Random();
 
         //if ((rand.nextInt(((int)2 - (int)1) + 1) + (int)1) == 1) {
         x = camera.position.x / 100f - IronCurtain.screenWidth / 100f;
@@ -83,6 +84,10 @@ public class Missile {
 
     public float getY() {
         return y;
+    }
+
+    public Vector2 getPosition() {
+        return new Vector2(body.getPosition().x * 100f, (IronCurtain.screenHeight / 2) * -0.925f);//body.getPosition().y * 100f
     }
 
     public Body getBody() {
