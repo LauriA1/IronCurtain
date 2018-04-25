@@ -5,12 +5,13 @@ import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.lamoid.ironcurtain.IronCurtain;
 
 import java.util.Random;
 
-public class Missile {
+public class Missiles {
     private Texture texture;
     private Sprite sprite;
     private Body body;
@@ -19,7 +20,7 @@ public class Missile {
     private float x = 0;
     private float y = 0;
 
-    public Missile(World world) {
+    public Missiles(World world) {
         texture = new Texture("missile.png");
 
         y = -Gdx.graphics.getHeight();
@@ -27,12 +28,9 @@ public class Missile {
         sprite = new Sprite(texture);
         sprite.setPosition(x, y);
 
-        //create body
         BodyDef bodyDef = new BodyDef();
         bodyDef.type = BodyDef.BodyType.DynamicBody;
         bodyDef.position.set(x + sprite.getWidth() / 200f, y + sprite.getHeight() / 200f);
-        //bodyDef.angularVelocity = 5;
-        //bodyDef.angularDamping = 5;
 
         body = world.createBody(bodyDef);
         body.setUserData(this);
@@ -59,17 +57,9 @@ public class Missile {
     }
 
     public void setPos(Camera camera) {
-        Random rand;
-        rand = new Random();
-
-        if ((rand.nextInt(((int)2 - (int)1) + 1) + (int)1) == 1) {
-            x = camera.position.x / 100f - IronCurtain.screenWidth / 200f;
-        }
-        else {
-            x = camera.position.x / 100f + IronCurtain.screenWidth / 200f;
-        }
-
+        x = camera.position.x / 100f - IronCurtain.screenWidth / 100f;
         y = Gdx.graphics.getHeight() / 200f;
+
         body.setTransform(x, y, body.getAngle());
     }
 
@@ -85,11 +75,13 @@ public class Missile {
         return y;
     }
 
+    public Vector2 getPosition() {
+        return new Vector2(body.getPosition().x * 100f, (IronCurtain.screenHeight / 2) * -0.925f);
+    }
+
     public Body getBody() {
         return body;
     }
-
-    public FixtureDef getFixture() { return fixtureDef; }
 
     public Texture getTexture() {
         return texture;

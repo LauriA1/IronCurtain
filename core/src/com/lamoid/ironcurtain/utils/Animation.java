@@ -56,4 +56,8 @@ public class Animation {
         }
         return frames.get(frame);
     }
+
+    public int getFrameNumber() {
+        return frame;
+    }
 }

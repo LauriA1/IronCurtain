@@ -2,6 +2,7 @@ package com.lamoid.ironcurtain.screens;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -22,7 +23,6 @@ public class IntroScreen implements Screen {
 
     @Override
     public void show() {
-        stage = new Stage();
         Gdx.input.setInputProcessor(stage);
 
         Texture logo_texture = new Texture ("logo.png");
@@ -36,18 +36,12 @@ public class IntroScreen implements Screen {
                 Actions.fadeOut(2f), Actions.run(onSplashFinishedRunnable)));
 
         stage.addActor(splashImage);
-
-        /*logo_sprite = new Sprite(logo_texture);
-        logo_sprite.setSize(logo_sprite.getWidth()/logo_sprite.getHeight()*Gdx.graphics.getWidth()*0.6f,
-                logo_sprite.getHeight()/logo_sprite.getWidth()*Gdx.graphics.getHeight()*0.6f);
-        logo_sprite.setPosition((Gdx.graphics.getWidth() - logo_sprite.getWidth())/2,
-                (Gdx.graphics.getHeight() - logo_sprite.getHeight())/2);*/
     }
 
     private Runnable onSplashFinishedRunnable = new Runnable() {
         @Override
         public void run() {
-            game.changeScreen(IronCurtain.MAINMENU);
+            game.changeScreen(IronCurtain.MAINMENU, 0);
         }
     };
 
@@ -62,17 +56,14 @@ public class IntroScreen implements Screen {
 
     @Override
     public void resize(int width, int height) {
-
     }
 
     @Override
     public void pause() {
-
     }
 
     @Override
     public void resume() {
-
     }
 
     @Override

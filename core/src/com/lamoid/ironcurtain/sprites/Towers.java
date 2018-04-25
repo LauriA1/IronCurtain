@@ -28,8 +28,8 @@ public class Towers {
     public Towers(float x1, float x2, float y) {
         texture = new Texture ("tower.png");
         sprite = new Sprite(texture);
-        sprite.setSize(IronCurtain.screenWidth/IronCurtain.screenHeight * sprite.getWidth() * 0.5f,
-                IronCurtain.screenWidth/IronCurtain.screenHeight * sprite.getHeight() * 0.5f);
+        sprite.setSize(IronCurtain.screenWidth /IronCurtain.screenHeight * sprite.getWidth() * 0.5f,
+                IronCurtain.screenWidth /IronCurtain.screenHeight * sprite.getHeight() * 0.5f);
 
         Random rand;
         rand = new Random();
@@ -42,9 +42,6 @@ public class Towers {
 
     public void drawSpotlight(ShapeRenderer shapeRenderer, Camera camera) {
         shapeRenderer.setColor(255 / 255.0f, 255 / 255.0f, 153 / 255.0f, 0.3f);
-        /*shapeRenderer.cone(sprite.getX() + sprite.getWidth() / 3 + Gdx.graphics.getWidth() / 2 - camera.position.x,
-                sprite.getY() + Gdx.graphics.getHeight(),
-                0, 50, 200, 20);*/
 
         _x1 = sprite.getX() + sprite.getWidth() / 2 + IronCurtain.screenWidth / 2 - camera.position.x;
         _y1 = (sprite.getY() + sprite.getHeight() + IronCurtain.screenHeight / 2) * 0.85f;
@@ -73,20 +70,6 @@ public class Towers {
         shapeRenderer.triangle(_x1, _y1, _x2, _y2, _x3, _y3);
         shapeRenderer.setColor(255 / 255.0f, 255 / 255.0f, 153 / 255.0f, 1f);
         shapeRenderer.ellipse(_x3, _y3 - ((_x2 - _x3)/6)/2, _x2 - _x3, (_x2- _x3)/6);
-        //System.out.println((sprite.getX()) + ", " + (sprite.getY() + Gdx.graphics.getHeight()));
-    }
-
-    public void drawGunfire(ShapeRenderer shapeRenderer, Camera camera) {
-        shapeRenderer.setColor(0 / 255.0f, 0 / 255.0f, 0 / 255.0f, 0.5f);
-
-        Random rand;
-        rand = new Random();
-        int r = rand.nextInt((64 - (-64)) + 1) + (-64);
-
-        _x2 = _x1 + r;
-        _y2 = _y1 - sprite.getHeight() * 0.75f + Math.abs(r);
-
-        shapeRenderer.rectLine(_x1, _y1, _x2, _y2, 4);
     }
 
     public void drawTower(SpriteBatch batch) {
@@ -109,26 +92,10 @@ public class Towers {
         return sound_played;
     }
 
-    public void set_overlap_count(int overlap_count) {
-        this.overlap_count = overlap_count;
-    }
-
-    public int get_overlap_count() {
-        return overlap_count;
-    }
-
     public List<Float> getCoordinates() {
         List<Float> coordinates = new ArrayList<Float>();
-        //coordinates.add(_x1);
-        //coordinates.add(_y1);
         coordinates.add(_x2);
-        //coordinates.add(_y2);
         coordinates.add(_x3);
-        //coordinates.add(_y3);
         return coordinates;
-    }
-
-    public Sprite getSprite() {
-        return sprite;
     }
 }

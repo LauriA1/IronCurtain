@@ -37,15 +37,13 @@ public class Dogs {
         position.x = camera.position.x / 100f + (IronCurtain.screenWidth * 1.5f) / 200f;
         position.y = (-IronCurtain.screenHeight * 0.8f) / 200f;
 
+
         sprite = new Sprite(texture);
         sprite.setSize(IronCurtain.screenWidth/ IronCurtain.screenHeight * sprite.getWidth() * 0.6f,
                 IronCurtain.screenWidth/IronCurtain.screenHeight * sprite.getHeight() * 0.6f);
 
         dogAnimation = new Animation(new TextureRegion(texture), frameCount, 10.5f);
-        //sprite.setPosition(x, y);
-        //sprite.flip(true, false);
 
-        //create body
         BodyDef bodyDef = new BodyDef();
         bodyDef.type = BodyDef.BodyType.DynamicBody;
         bodyDef.position.set(position.x + getWidth() / 200f, position.y + getHeight() / 200f);
@@ -67,33 +65,20 @@ public class Dogs {
     }
 
     public void update(float dt){
-        /*sprite.setPosition(body.getPosition().x * 100f - sprite.getWidth() / 2,
-                body.getPosition().y * 100f - sprite.getHeight() / 2);*/
-
         position.x = body.getPosition().x * 100f - getWidth() / 2;
         position.y = body.getPosition().y * 100f - getHeight() / 2;
 
         dogAnimation.update(dt);
     }
 
-    public void moveRight(){
+    /*public void moveRight(){
         movementR = MOVEMENT;
         dogAnimation.setDirection(0.5f, true, false);
-    }
+    }*/
 
     public void moveLeft(){
         movementL = -MOVEMENT;
         dogAnimation.setDirection(0.5f, false, false);
-    }
-
-    /*public void resetPos(Camera camera) {
-        x = camera.position.x / 100f - (IronCurtain.screenWidth * 1.5f) / 200f;
-        y = (-IronCurtain.screenHeight * 0.8f) / 200f;
-        body.setTransform(x, y, body.getAngle());
-    }*/
-
-    public void drawDog(SpriteBatch batch) {
-        sprite.draw(batch);
     }
 
     public TextureRegion getDog() {
@@ -124,8 +109,6 @@ public class Dogs {
     public Body getBody() {
         return body;
     }
-
-    public FixtureDef getFixture() { return fixtureDef; }
 
     public Texture getTexture() {
         return texture;

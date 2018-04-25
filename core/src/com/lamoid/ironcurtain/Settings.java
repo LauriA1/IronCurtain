@@ -29,12 +29,12 @@ public class Settings {
         return getPrefs().getString(PREF_LANGUAGE, "English");
     }
 
-    public boolean isSoundEffectsEnabled() {
+    public boolean isSoundsEnabled() {
         return getPrefs().getBoolean(PREF_SOUND_ENABLED, true);
     }
 
-    public void setSoundEffectsEnabled(boolean soundEffectsEnabled) {
-        getPrefs().putBoolean(PREF_SOUND_ENABLED, soundEffectsEnabled);
+    public void setSoundsEnabled(boolean soundsEnabled) {
+        getPrefs().putBoolean(PREF_SOUND_ENABLED, soundsEnabled);
         getPrefs().flush();
     }
 

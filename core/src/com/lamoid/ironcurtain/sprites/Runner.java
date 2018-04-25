@@ -6,25 +6,22 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.*;
-import com.lamoid.ironcurtain.utils.Animation;
 import com.lamoid.ironcurtain.IronCurtain;
+import com.lamoid.ironcurtain.utils.Animation;
 
 
 public class Runner {
-    private static final int GRAVITY = -15;
     private static final int MOVEMENT = 500;
     private Texture runner;
     private Vector3 position;
-    //private Rectangle bounds;
     private Sprite runnerSprite;
     private Animation runnerAnimation;
     private Body body;
 
-    boolean lastDirection = true;
     float movementL, movementR;
-    int index;
     int frameCount = 12;
     boolean is_jumping = true;
+    float max_health;
     float health;
 
     public Runner(World world, float x, float y){
@@ -36,12 +33,10 @@ public class Runner {
 
         runnerAnimation = new Animation(new TextureRegion(runner), frameCount, 10.5f);
         moveRight();
-        //bounds = new Rectangle(x, y, runner.getWidth(), runner.getHeight());
-        //System.out.println(runner.getHeight() + " : " + runner.getWidth());
 
-        health = 10f;
+        max_health = 10f;
+        health = max_health;
 
-        //create body
         BodyDef bodyDef = new BodyDef();
         bodyDef.type = BodyDef.BodyType.DynamicBody;
         bodyDef.position.set(position.x + getWidth() / 200f, position.y + getHeight() / 200f);
@@ -55,18 +50,16 @@ public class Runner {
         FixtureDef fixtureDef = new FixtureDef();
         fixtureDef.shape = shape;
         fixtureDef.density = 0.1f;
-        fixtureDef.restitution = 0.5f;
+        fixtureDef.restitution = 0f;
         fixtureDef.filter.groupIndex = -1;
 
-                body.createFixture(fixtureDef);
+        body.createFixture(fixtureDef);
         shape.dispose();
     }
 
     public void update(float dt){
         position.x = body.getPosition().x * 100f - getWidth() / 2;
         position.y = body.getPosition().y * 100f - getHeight() / 2;
-
-        //System.out.println(position.y);
 
         if ((position.y + getHeight()) > 0) {
             is_jumping = true;
@@ -76,19 +69,6 @@ public class Runner {
         }
 
         runnerAnimation.update(dt);
-
-        /*sprite.setPosition((body.getPosition().x * PIXELS_TO_METERS) - sprite.getWidth()/2,
-                (body.getPosition().y * PIXELS_TO_METERS) -sprite.getHeight()/2 );*/
-
-        /*if(position.y > 0)
-            velocity.add(0, GRAVITY, 0);
-        velocity.scl(dt);
-        position.add((movementL + movementR) * dt,velocity.y, 0);
-        if(position.y < 30)
-            position.y = 30;
-
-        velocity.scl(1/dt);
-        bounds.setPosition(position.x, position.y);*/
     }
 
     public void moveRight(){
@@ -115,7 +95,6 @@ public class Runner {
 
     public float getWidth() { return runnerSprite.getWidth() / frameCount; }
 
-    public Sprite getRunnerSprite() { return runnerSprite; }
     public TextureRegion getRunner(boolean is_jumping) {
         return runnerAnimation.getFrame(is_jumping); }
 
@@ -134,6 +113,20 @@ public class Runner {
         return health;
     }
 
+    public void decreaseHealth(float value) {
+        if ((health - value) > 0) {
+            health -= value;
+            max_health -= value;
+        }
+        else {
+            health = 0;
+        }
+    }
+
+    public float getMaxHealth() {
+        return max_health;
+    }
+
     public Body getBody() {
         return body;
     }
@@ -141,6 +134,5 @@ public class Runner {
     public void dispose(){
         runner.dispose();
     }
-
 
 }
