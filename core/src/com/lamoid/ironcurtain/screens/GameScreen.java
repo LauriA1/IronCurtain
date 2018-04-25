@@ -449,6 +449,10 @@ public class GameScreen implements Screen, InputProcessor {
 
         batch.end();
 
+        if (move_dog || shoot_missile) {
+            attack_delay++;
+        }
+
         Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 
@@ -547,7 +551,7 @@ public class GameScreen implements Screen, InputProcessor {
                     if (runner_check1 && runner_check2) {
                         //runner.setHealth(runner.getHealth() - 0.1f);
 
-                        if (!move_dog || !shoot_missile) {
+                        if (!move_dog && !shoot_missile) {
                             if (!screenShaker.get_status()) {
                                 screenShaker.shake(5, camera.position);
                             }
